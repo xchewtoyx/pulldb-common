@@ -44,7 +44,6 @@ class Comicvine(object):
             self.api_base, path, query_string)
         logging.debug('Fetching comicvine resource: %s', resource_url)
         response = urlfetch.fetch(resource_url)
-        logging.debug('Got response: %r' % response)
         try:
             reply = json.loads(response.content)
         except ValueError as e:
@@ -98,7 +97,10 @@ class Comicvine(object):
     def _response_pages(self, response):
         total_results = response['number_of_total_results']
         limit = response['limit']
-        return ceil(1.0*total_results/limit)
+        pages = ceil(1.0*total_results/limit)
+        logging.debug('%d results with %d per page.  Fetching %d pages',
+                      total_results, limit, pages)
+        return pages
 
     def _search_resource(self, resource, query, **kwargs):
         path = 'search'
