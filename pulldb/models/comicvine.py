@@ -1,6 +1,7 @@
 from functools import partial
 import json
 import logging
+from math import ceil
 from urllib import urlencode
 
 from google.appengine.api import memcache
@@ -87,7 +88,17 @@ class Comicvine(object):
             '|'.join(str(id) for id in identifiers),
         )
         response = self._fetch_url(path, filter=filter_string, **kwargs)
+        pages = self._response_pages(response)
+        if pages > 1:
+            for index in range(1, pages):
+                response.extend = self._fetch_url(
+                    path, filter=filter_string, page=index, **kwargs)
         return response['results']
+
+    def _response_pages(self, response):
+        total_results = response['number_of_total_results']
+        limit = response['limit']
+        return ceil(1.0*total_results/limit)
 
     def _search_resource(self, resource, query, **kwargs):
         path = 'search'
