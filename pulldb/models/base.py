@@ -7,7 +7,7 @@ from google.appengine.ext import ndb
 def model_to_dict(model):
     'Convert a model instance to a serialisable dict'
     model_dict = {}
-    for key, value in model.to_dict():
+    for key, value in model.to_dict().iteritems():
         if isinstance(value, ndb.Key):
             model_dict[key] = value.urlsafe()
         elif isinstance(value, datetime.date):
