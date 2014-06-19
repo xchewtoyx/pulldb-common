@@ -90,8 +90,8 @@ class Comicvine(object):
         pages = self._response_pages(response)
         if pages > 1:
             for index in range(1, pages):
-                response.extend = self._fetch_url(
-                    path, filter=filter_string, page=index, **kwargs)
+                response['results'].extend(self._fetch_url(
+                    path, filter=filter_string, page=index, **kwargs))
         return response['results']
 
     def _response_pages(self, response):
