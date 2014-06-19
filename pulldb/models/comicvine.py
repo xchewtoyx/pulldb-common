@@ -97,7 +97,7 @@ class Comicvine(object):
     def _response_pages(self, response):
         total_results = response['number_of_total_results']
         limit = response['limit']
-        pages = ceil(1.0*total_results/limit)
+        pages = int(ceil(1.0*total_results/limit))
         logging.debug('%d results with %d per page.  Fetching %d pages',
                       total_results, limit, pages)
         return pages
