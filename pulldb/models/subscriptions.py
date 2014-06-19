@@ -30,7 +30,6 @@ def subscription_context(subscription):
 
 def subscription_key(volume_key, create=False):
     user = users.user_key()
-    volume_key = ndb.Key(urlsafe=volume_key)
     key = ndb.Key(
         Subscription, volume_key.id(),
         parent=user,
