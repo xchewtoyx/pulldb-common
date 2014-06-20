@@ -32,7 +32,7 @@ class Issue(ndb.Model):
     file_path = ndb.StringProperty()
     shard = ndb.IntegerProperty(default=-1)
     json = ndb.JsonProperty(indexed=False)
-    name = ndb.TextProperty()
+    name = ndb.StringProperty()
     changed = ndb.DateTimeProperty(auto_now=True)
     indexed = ndb.BooleanProperty(default=False)
 
