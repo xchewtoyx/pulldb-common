@@ -26,6 +26,8 @@ class Volume(ndb.Model):
     start_year = ndb.IntegerProperty()
     shard = ndb.IntegerProperty(default=-1)
     json = ndb.JsonProperty(indexed=False)
+    changed = ndb.DateTimeProperty(auto_now=True)
+    indexed = ndb.BooleanProperty(default=False)
 
 def volume_key(comicvine_volume, create=True, reindex=False, batch=False):
     if not comicvine_volume:
@@ -65,6 +67,7 @@ def volume_key(comicvine_volume, create=True, reindex=False, batch=False):
         if comicvine_volume.get('image'):
             volume.image = comicvine_volume['image'].get('small_url')
         volume.last_updated = last_updated
+        volume.indexed=False
         changed = True
 
     if changed:
@@ -73,9 +76,6 @@ def volume_key(comicvine_volume, create=True, reindex=False, batch=False):
             volume.put_async()
         else:
             volume.put()
-
-    if not batch and (changed or reindex):
-        index_volume(key, volume)
 
     return key
 

@@ -27,6 +27,8 @@ class Issue(ndb.Model):
     file_path = ndb.StringProperty()
     shard = ndb.IntegerProperty(default=-1)
     json = ndb.JsonProperty(indexed=False)
+    changed = ndb.DateTimeProperty(auto_now=True)
+    indexed = ndb.BooleanProperty(default=False)
 
 @ndb.tasklet
 def refresh_issue_shard(shard, shard_count, subscription, comicvine=None):
@@ -114,16 +116,15 @@ def issue_key(comicvine_issue, volume_key=None, create=True,
         if 'image' in comicvine_issue:
             issue.image = comicvine_issue['image'].get('small_url')
         issue.last_updated = last_updated
+        issue.indexed = False
         changed = True
+
     if changed:
         logging.info('Saving issue updates: %r', comicvine_issue)
         if batch:
             issue.put_async()
         else:
             issue.put()
-
-    if not batch and (reindex or changed):
-        index_issue(key, issue)
 
     return key
 
