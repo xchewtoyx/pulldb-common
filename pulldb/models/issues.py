@@ -139,14 +139,14 @@ def index_issue(key, issue, batch=False):
         document_fields.append(
             search.DateField(name='pubdate', value=issue.pubdate)
         )
-    volume_doc = search.Document(
+    issue_doc = search.Document(
         doc_id = key.urlsafe(),
         fields = document_fields)
     if batch:
-        return volume_doc
+        return issue_doc
     try:
         index = search.Index(name="issues")
-        index.put(volume_doc)
+        index.put(issue_doc)
     except search.Error as error:
         logging.exception('Put failed: %r', error)
 

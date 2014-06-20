@@ -79,7 +79,7 @@ def volume_key(comicvine_volume, create=True, reindex=False, batch=False):
 
     return key
 
-def index_volume(key, volume):
+def index_volume(key, volume, batch=False):
     document_fields = [
         search.TextField(name='name', value=volume.name),
         search.NumberField(name='volume_id', value=volume.identifier),
@@ -90,6 +90,8 @@ def index_volume(key, volume):
     volume_doc = search.Document(
         doc_id = key.urlsafe(),
         fields = document_fields)
+    if batch:
+        return volume_doc
     try:
         index = search.Index(name="volumes")
         index.put(volume_doc)
