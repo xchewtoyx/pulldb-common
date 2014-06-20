@@ -113,6 +113,7 @@ def issue_key(comicvine_issue, volume_key=None, create=True,
             issue.pubdate=pubdate
         if 'image' in comicvine_issue:
             issue.image = comicvine_issue['image'].get('small_url')
+        issue.last_updated = last_updated
         changed = True
     if changed:
         logging.info('Saving issue updates: %r', comicvine_issue)
