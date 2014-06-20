@@ -33,7 +33,7 @@ class Comicvine(object):
             resource = tokens[1]
             return partial(self._search_resource, resource)
 
-    def _fetch_url(self, path, **kwargs):
+    def _fetch_url(self, path, deadline=5, **kwargs):
         query = {
             'api_key': self.api_key,
             'format': 'json',
@@ -43,7 +43,7 @@ class Comicvine(object):
         resource_url = '%s/%s?%s' % (
             self.api_base, path, query_string)
         logging.debug('Fetching comicvine resource: %s', resource_url)
-        response = urlfetch.fetch(resource_url)
+        response = urlfetch.fetch(resource_url, deadline=deadline)
         try:
             reply = json.loads(response.content)
         except ValueError as e:
