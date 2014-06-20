@@ -26,6 +26,7 @@ class Issue(ndb.Model):
   site_detail_url = ndb.StringProperty()
   file_path = ndb.StringProperty()
   shard = ndb.IntegerProperty(default=-1)
+  json = ndb.JsonProperty(indexed=False)
 
 @ndb.tasklet
 def refresh_issue_shard(shard, shard_count, subscription, comicvine=None):
@@ -89,13 +90,14 @@ def issue_key(comicvine_issue, volume_key=None, create=True,
         issue = Issue(
             key = key,
             identifier=comicvine_issue['id'],
-            last_updated=datetime.min
+            last_updated=datetime.min,
         )
     if comicvine_issue.get('date_last_updated'):
         last_update = parse_date(comicvine_issue['date_last_updated'])
     else:
         last_update = datetime.now()
     if not hasattr(issue, 'last_updated') or last_update > issue.last_updated:
+        issue.json = comicvine_issue
         issue.name='%s %s' % (
             comicvine_issue['volume']['name'],
             comicvine_issue['issue_number'],

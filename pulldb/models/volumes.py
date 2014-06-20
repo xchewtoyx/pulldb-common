@@ -25,6 +25,7 @@ class Volume(ndb.Model):
   site_detail_url = ndb.StringProperty()
   start_year = ndb.IntegerProperty()
   shard = ndb.IntegerProperty(default=-1)
+  json = ndb.JsonProperty(indexed=False)
 
 def volume_key(comicvine_volume, create=True, reindex=False, batch=False):
     if not comicvine_volume:
@@ -56,6 +57,7 @@ def volume_key(comicvine_volume, create=True, reindex=False, batch=False):
             last_updated > volume.last_updated):
         logging.info('Volume has changes: %r', comicvine_volume)
         # Volume is new or has been info has been updated since last put
+        volume.json=comicvine_volume
         volume.name=comicvine_volume.get('name')
         volume.issue_count=comicvine_volume.get('count_of_issues')
         volume.site_detail_url=comicvine_volume.get('site_detail_url')

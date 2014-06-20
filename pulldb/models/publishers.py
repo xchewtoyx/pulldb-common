@@ -6,13 +6,14 @@ from pulldb.models import comicvine
 from pulldb.models.properties import ImageProperty
 
 class Publisher(ndb.Model):
-  '''Publisher object in datastore.
+    '''Publisher object in datastore.
 
-  Holds publisher data.
-  '''
-  identifier = ndb.IntegerProperty()
-  name = ndb.StringProperty()
-  image = ImageProperty()
+    Holds publisher data.
+    '''
+    identifier = ndb.IntegerProperty()
+    name = ndb.StringProperty()
+    image = ImageProperty()
+    json = ndb.JsonProperty(indexed=false)
 
 def publisher_key(comicvine_publisher, create=True):
     if not comicvine_publisher:
@@ -29,7 +30,8 @@ def publisher_key(comicvine_publisher, create=True):
         publisher = Publisher(
             key=key,
             identifier=comicvine_publisher['id'],
-            name=comicvine_publisher['name']
+            name=comicvine_publisher['name'],
+            json=comicvine_publisher,
         )
         if comicvine_publisher.get('image'):
             publisher.image=comicvine_publisher['image'].get('tiny_url')
