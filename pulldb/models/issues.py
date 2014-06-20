@@ -19,6 +19,7 @@ class Issue(ndb.Model):
 
     Holds issue data.  Parent key should be a volume.
     '''
+    # These are properties of the comicvine issue
     identifier = ndb.IntegerProperty()
     pubdate = ndb.DateProperty()
     cover = ndb.BlobProperty()
@@ -27,9 +28,11 @@ class Issue(ndb.Model):
     last_updated = ndb.DateTimeProperty(default=datetime.min)
     title = ndb.StringProperty()
     site_detail_url = ndb.StringProperty()
+    # These are local properties
     file_path = ndb.StringProperty()
     shard = ndb.IntegerProperty(default=-1)
     json = ndb.JsonProperty(indexed=False)
+    name = ndb.TextProperty()
     changed = ndb.DateTimeProperty(auto_now=True)
     indexed = ndb.BooleanProperty(default=False)
 
@@ -146,7 +149,6 @@ def issue_key(comicvine_issue, volume_key=None, create=True,
 def index_issue(key, issue, batch=False):
     document_fields = [
         search.TextField(name='title', value=issue.title),
-        search.TextField(name='name', value=issue.name),
         search.TextField(name='issue_number', value=issue.issue_number),
         search.NumberField(name='issue_id', value=issue.identifier),
     ]
@@ -168,6 +170,13 @@ def index_issue(key, issue, batch=False):
             document_fields.append(
                 search.HtmlField(name='description', value=description)
             )
+        if not issue.name:
+            search.TextField(name='name', value='%s %s' % (
+                issue.json.get('volume', {}).get('name'),
+                issue.issue_number
+            ))
+    if issue.name:
+        search.TextField(name='name', value=issue.name)
 
     issue_doc = search.Document(
         doc_id = key.urlsafe(),

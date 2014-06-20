@@ -121,8 +121,9 @@ def index_volume(key, volume, batch=False):
             )
 
     volume_doc = search.Document(
-        doc_id = key.urlsafe(),
-        fields = document_fields)
+        doc_id=key.urlsafe(),
+        fields=document_fields
+    )
     if batch:
         return volume_doc
     try:

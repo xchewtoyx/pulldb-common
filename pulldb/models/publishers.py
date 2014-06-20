@@ -13,7 +13,7 @@ class Publisher(ndb.Model):
     identifier = ndb.IntegerProperty()
     name = ndb.StringProperty()
     image = ImageProperty()
-    json = ndb.JsonProperty(indexed=false)
+    json = ndb.JsonProperty(indexed=False)
 
 def publisher_key(comicvine_publisher, create=True):
     if not comicvine_publisher:
