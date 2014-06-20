@@ -12,20 +12,20 @@ from pulldb.models import comicvine
 from pulldb.models.properties import ImageProperty
 
 class Volume(ndb.Model):
-  '''Volume object in datastore.
+    '''Volume object in datastore.
 
-  Holds volume data.
-  '''
-  identifier = ndb.IntegerProperty()
-  image = ImageProperty()
-  issue_count = ndb.IntegerProperty()
-  last_updated = ndb.DateTimeProperty(default=datetime.min)
-  name = ndb.StringProperty()
-  publisher = ndb.KeyProperty(kind=publishers.Publisher)
-  site_detail_url = ndb.StringProperty()
-  start_year = ndb.IntegerProperty()
-  shard = ndb.IntegerProperty(default=-1)
-  json = ndb.JsonProperty(indexed=False)
+    Holds volume data.
+    '''
+    identifier = ndb.IntegerProperty()
+    image = ImageProperty()
+    issue_count = ndb.IntegerProperty()
+    last_updated = ndb.DateTimeProperty(default=datetime.min)
+    name = ndb.StringProperty()
+    publisher = ndb.KeyProperty(kind=publishers.Publisher)
+    site_detail_url = ndb.StringProperty()
+    start_year = ndb.IntegerProperty()
+    shard = ndb.IntegerProperty(default=-1)
+    json = ndb.JsonProperty(indexed=False)
 
 def volume_key(comicvine_volume, create=True, reindex=False, batch=False):
     if not comicvine_volume:
