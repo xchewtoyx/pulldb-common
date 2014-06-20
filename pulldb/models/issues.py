@@ -176,7 +176,7 @@ def index_issue(key, issue, batch=False):
         volume_name = issue.json.get('volume', {}).get('name')
         if volume_name:
             document_fields.append(
-                search.TextField(name='volume', value='volume_name')
+                search.TextField(name='volume', value=volume_name)
             )
         if not issue.name:
             document_fields.append(
