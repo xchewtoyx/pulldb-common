@@ -80,21 +80,21 @@ def volume_key(comicvine_volume, create=True, reindex=False, batch=False):
     return key
 
 def index_volume(key, volume):
-  document_fields = [
-    search.TextField(name='name', value=volume.name),
-    search.NumberField(name='volume_id', value=volume.identifier),
-  ]
-  if volume.start_year:
-    document_fields.append(
-      search.NumberField(name='start_year', value=volume.start_year))
-  volume_doc = search.Document(
-    doc_id = key.urlsafe(),
-    fields = document_fields)
-  try:
-    index = search.Index(name="volumes")
-    index.put(volume_doc)
-  except search.Error as error:
-    logging.exception('Put failed: %r', error)
+    document_fields = [
+        search.TextField(name='name', value=volume.name),
+        search.NumberField(name='volume_id', value=volume.identifier),
+    ]
+    if volume.start_year:
+        document_fields.append(
+            search.NumberField(name='start_year', value=volume.start_year))
+    volume_doc = search.Document(
+        doc_id = key.urlsafe(),
+        fields = document_fields)
+    try:
+        index = search.Index(name="volumes")
+        index.put(volume_doc)
+    except search.Error as error:
+        logging.exception('Put failed: %r', error)
 
 @ndb.tasklet
 def volume_context(volume):

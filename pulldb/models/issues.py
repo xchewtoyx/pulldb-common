@@ -127,26 +127,26 @@ def issue_key(comicvine_issue, volume_key=None, create=True,
     return key
 
 def index_issue(key, issue, batch=False):
-  document_fields = [
-    search.TextField(name='title', value=issue.title),
-    search.TextField(name='name', value=issue.name),
-    search.TextField(name='issue_number', value=issue.issue_number),
-    search.NumberField(name='issue_id', value=issue.identifier),
-  ]
-  if isinstance(issue.pubdate, date):
-    document_fields.append(
-      search.DateField(name='pubdate', value=issue.pubdate)
-    )
-  volume_doc = search.Document(
-    doc_id = key.urlsafe(),
-    fields = document_fields)
-  if batch:
-    return volume_doc
-  try:
-    index = search.Index(name="issues")
-    index.put(volume_doc)
-  except search.Error as error:
-    logging.exception('Put failed: %r', error)
+    document_fields = [
+        search.TextField(name='title', value=issue.title),
+        search.TextField(name='name', value=issue.name),
+        search.TextField(name='issue_number', value=issue.issue_number),
+        search.NumberField(name='issue_id', value=issue.identifier),
+    ]
+    if isinstance(issue.pubdate, date):
+        document_fields.append(
+            search.DateField(name='pubdate', value=issue.pubdate)
+        )
+    volume_doc = search.Document(
+        doc_id = key.urlsafe(),
+        fields = document_fields)
+    if batch:
+        return volume_doc
+    try:
+        index = search.Index(name="issues")
+        index.put(volume_doc)
+    except search.Error as error:
+        logging.exception('Put failed: %r', error)
 
 @ndb.tasklet
 def issue_context(issue):
