@@ -151,6 +151,9 @@ def index_issue(key, issue, batch=False):
         search.TextField(name='title', value=issue.title),
         search.TextField(name='issue_number', value=issue.issue_number),
         search.NumberField(name='issue_id', value=issue.identifier),
+        search.NumberField(
+            name='volume_id', value=int(issue.key.parent().id())
+        )
     ]
     if isinstance(issue.pubdate, date):
         document_fields.append(
@@ -170,13 +173,24 @@ def index_issue(key, issue, batch=False):
             document_fields.append(
                 search.HtmlField(name='description', value=description)
             )
+        volume_name = issue.json.get('volume', {}).get('name')
+        if volume_name:
+            document_fields.append(
+                search.TextField(name='volume', value='volume_name')
+            )
         if not issue.name:
-            search.TextField(name='name', value='%s %s' % (
-                issue.json.get('volume', {}).get('name'),
-                issue.issue_number
-            ))
+            document_fields.append(
+                search.TextField(
+                    name='name', value='%s %s' % (
+                        issue.json.get('volume', {}).get('name'),
+                        issue.issue_number,
+                    )
+                )
+            )
     if issue.name:
-        search.TextField(name='name', value=issue.name)
+        document_fields.append(
+            search.TextField(name='name', value=issue.name)
+        )
 
     issue_doc = search.Document(
         doc_id = key.urlsafe(),
