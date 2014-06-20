@@ -12,21 +12,21 @@ from pulldb.models.properties import ImageProperty
 from pulldb.models import volumes
 
 class Issue(ndb.Model):
-  '''Issue object in datastore.
+    '''Issue object in datastore.
 
-  Holds issue data.  Parent key should be a volume.
-  '''
-  identifier = ndb.IntegerProperty()
-  pubdate = ndb.DateProperty()
-  cover = ndb.BlobProperty()
-  image = ImageProperty()
-  issue_number = ndb.StringProperty()
-  last_updated = ndb.DateTimeProperty(default=datetime.min)
-  title = ndb.StringProperty()
-  site_detail_url = ndb.StringProperty()
-  file_path = ndb.StringProperty()
-  shard = ndb.IntegerProperty(default=-1)
-  json = ndb.JsonProperty(indexed=False)
+    Holds issue data.  Parent key should be a volume.
+    '''
+    identifier = ndb.IntegerProperty()
+    pubdate = ndb.DateProperty()
+    cover = ndb.BlobProperty()
+    image = ImageProperty()
+    issue_number = ndb.StringProperty()
+    last_updated = ndb.DateTimeProperty(default=datetime.min)
+    title = ndb.StringProperty()
+    site_detail_url = ndb.StringProperty()
+    file_path = ndb.StringProperty()
+    shard = ndb.IntegerProperty(default=-1)
+    json = ndb.JsonProperty(indexed=False)
 
 @ndb.tasklet
 def refresh_issue_shard(shard, shard_count, subscription, comicvine=None):
