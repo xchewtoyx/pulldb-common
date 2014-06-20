@@ -7,9 +7,12 @@ from google.appengine.ext import ndb
 
 from dateutil.parser import parse as parse_date
 
+# pylint: disable=F0401
 from pulldb.models import publishers
 from pulldb.models import comicvine
 from pulldb.models.properties import ImageProperty
+
+# pylint: disable=W0232,C0103,E1101,R0201,R0903,R0902
 
 class Volume(ndb.Model):
     '''Volume object in datastore.
@@ -28,6 +31,25 @@ class Volume(ndb.Model):
     json = ndb.JsonProperty(indexed=False)
     changed = ndb.DateTimeProperty(auto_now=True)
     indexed = ndb.BooleanProperty(default=False)
+
+def volume_updated(volume, comicvine_volume):
+    updated = False
+    volume_dict = volume.json or {}
+
+    cv_update = comicvine_volume.get('date_last_updated')
+    if cv_update:
+        last_update = parse_date(cv_update)
+    else:
+        last_update = datetime.now()
+
+    if last_update > volume.last_updated:
+        updated = True
+
+    if set(comicvine_volume.keys()) - set(volume_dict.keys()):
+        # keys differ between stored and fetched
+        updated = True
+
+    return updated, last_update
 
 def volume_key(comicvine_volume, create=True, reindex=False, batch=False):
     if not comicvine_volume:
@@ -51,12 +73,8 @@ def volume_key(comicvine_volume, create=True, reindex=False, batch=False):
             publisher=publisher_key,
             last_updated=datetime.min,
         )
-    if comicvine_volume.get('date_last_updated'):
-        last_updated = parse_date(comicvine_volume['date_last_updated'])
-    else:
-        last_updated = datetime.now()
-    if not hasattr(volume, 'last_updated') or (
-            last_updated > volume.last_updated):
+    updated, last_updated = volume_updated(volume, comicvine_volume)
+    if updated:
         logging.info('Volume has changes: %r', comicvine_volume)
         # Volume is new or has been info has been updated since last put
         volume.json=comicvine_volume
@@ -87,6 +105,21 @@ def index_volume(key, volume, batch=False):
     if volume.start_year:
         document_fields.append(
             search.NumberField(name='start_year', value=volume.start_year))
+    if volume.json:
+        contributors = volume.json.get('people')
+        if contributors:
+            for person in contributors:
+                document_fields.append(
+                    search.TextField(
+                        name='person', value=person['name']
+                    )
+                )
+        description = volume.json.get('description')
+        if description:
+            document_fields.append(
+                search.HtmlField(name='description', value=description)
+            )
+
     volume_doc = search.Document(
         doc_id = key.urlsafe(),
         fields = document_fields)
@@ -107,7 +140,7 @@ def volume_context(volume):
     })
 
 @ndb.tasklet
-def refresh_volume_shard(shard, shard_count, subscription, comicvine):
+def refresh_volume_shard(shard, shard_count, subscription, cv):
     volume = yield subscription.volume.get_async()
     if volume.identifier % shard_count == shard:
         raise ndb.Return(volume.identifier)

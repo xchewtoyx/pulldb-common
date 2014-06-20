@@ -7,9 +7,12 @@ from google.appengine.api import search
 from google.appengine.ext import ndb
 import httplib
 
+# pylint: disable=F0401
 from pulldb.models import comicvine
 from pulldb.models.properties import ImageProperty
 from pulldb.models import volumes
+
+# pylint: disable=W0232,C0103,E1101,R0201,R0903,R0902
 
 class Issue(ndb.Model):
     '''Issue object in datastore.
@@ -31,25 +34,22 @@ class Issue(ndb.Model):
     indexed = ndb.BooleanProperty(default=False)
 
 @ndb.tasklet
-def refresh_issue_shard(shard, shard_count, subscription, comicvine=None):
+def refresh_issue_shard(shard, shard_count, subscription, cv=None):
   volume = yield subscription.volume.get_async()
   if volume.identifier % shard_count == shard:
-    comicvine_volume = comicvine.fetch_volume(volume.identifier)
-    comicvine_issues = comicvine_volume['issues']
-    issues = []
-    for index in range(0, len(comicvine_issues), 100):
-      ids = [str(issue['id']) for issue in comicvine_issues[
-        index:min([len(comicvine_issues), index+100])]]
-      issue_page = comicvine.fetch_issue_batch(ids)
-      for issue in issue_page:
-        issues.append(issue_key(
-          issue, volume_key=volume.key, create=True, reindex=True))
-    raise ndb.Return(issues)
+    volume_issues = []
+    for issue in cv.fetch_issue_batch(volume.identifier, filter_attr='volume'):
+        volume_issues.append(
+            issue_key(
+                issue, volume_key=volume.key, create=True, reindex=True
+            )
+        )
+    raise ndb.Return(volume_issues)
 
 @ndb.tasklet
-def refresh_issue_volume(volume, comicvine=None):
+def refresh_issue_volume(volume, cv=None):
   try:
-    comicvine_volume = comicvine.fetch_volume(volume.identifier)
+    comicvine_volume = cv.fetch_volume(volume.identifier)
   except httplib.HTTPException as e:
     logging.exception(e)
     return
@@ -65,7 +65,7 @@ def refresh_issue_volume(volume, comicvine=None):
         index:min([len(comicvine_issues), index+100])]:
       issue_ids.append(issue['id'])
     try:
-      issue_page = comicvine.fetch_issue_batch(issue_ids)
+      issue_page = cv.fetch_issue_batch(issue_ids)
     except httplib.HTTPException as e:
       logging.exception(e)
       return
@@ -75,12 +75,30 @@ def refresh_issue_volume(volume, comicvine=None):
 
   raise ndb.Return(issues)
 
+def issue_updated(issue, comicvine_issue):
+    updated = False
+    issue_dict = issue.json or {}
+
+    cv_update = comicvine_issue.get('date_last_updated', '')
+    if cv_update:
+        last_update = parse_date(comicvine_issue['date_last_updated'])
+    else:
+        last_update = datetime.now()
+
+    if last_update > issue.last_updated:
+        updated = True
+
+    if set(comicvine_issue.keys()) - set(issue_dict.keys()):
+        # keys differ between stored and fetched
+        updated = True
+
+    return updated, last_update
+
 def issue_key(comicvine_issue, volume_key=None, create=True,
               reindex=False, batch=False):
     if not comicvine:
         return
     changed = False
-    key_future = None
     volume_id = comicvine_issue['volume']['id']
     issue_id = comicvine_issue['id']
     key = ndb.Key(volumes.Volume, str(volume_id), Issue, str(issue_id))
@@ -94,11 +112,8 @@ def issue_key(comicvine_issue, volume_key=None, create=True,
             identifier=comicvine_issue['id'],
             last_updated=datetime.min,
         )
-    if comicvine_issue.get('date_last_updated'):
-        last_update = parse_date(comicvine_issue['date_last_updated'])
-    else:
-        last_update = datetime.now()
-    if not hasattr(issue, 'last_updated') or last_update > issue.last_updated:
+    updated, last_update = issue_updated(issue, comicvine_issue)
+    if updated:
         issue.json = comicvine_issue
         issue.name='%s %s' % (
             comicvine_issue['volume']['name'],
@@ -115,7 +130,7 @@ def issue_key(comicvine_issue, volume_key=None, create=True,
             issue.pubdate=pubdate
         if 'image' in comicvine_issue:
             issue.image = comicvine_issue['image'].get('small_url')
-        issue.last_updated = last_updated
+        issue.last_updated = last_update
         issue.indexed = False
         changed = True
 
@@ -139,9 +154,25 @@ def index_issue(key, issue, batch=False):
         document_fields.append(
             search.DateField(name='pubdate', value=issue.pubdate)
         )
+    if issue.json:
+        contributors = issue.json.get('person_credits')
+        if contributors:
+            for person in contributors:
+                document_fields.append(
+                    search.TextField(
+                        name=person['role'], value=person['name']
+                    )
+                )
+        description = issue.json.get('description')
+        if description:
+            document_fields.append(
+                search.HtmlField(name='description', value=description)
+            )
+
     issue_doc = search.Document(
         doc_id = key.urlsafe(),
-        fields = document_fields)
+        fields = document_fields
+    )
     if batch:
         return issue_doc
     try:
