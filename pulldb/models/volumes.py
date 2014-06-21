@@ -40,22 +40,23 @@ class Volume(ndb.Model):
         self.name=data.get('name', self.name)
         self.issue_count=data.get('count_of_issues', self.issue_count)
         self.site_detail_url=data.get('site_detail_url', self.site_detail_url)
-        self.start_year=int(data.get('start_year'), self.start_year)
+        if data.get('start_year'):
+            self.start_year=int(data['start_year'])
         if data.get('image'):
             self.image = data['image'].get('small_url')
         last_updated = data.get('date_last_updated')
         if last_updated:
-            last_updated = parse_date(new_data_date)
+            last_updated = parse_date(last_updated)
         else:
-            last_updated = datetime.now()
+            last_updated = datetime.min
         self.last_updated = last_updated
         self.indexed = False
 
     def has_updates(self, new_data):
-        volume_data = volume.json or {}
+        volume_data = self.json or {}
         updates = False
 
-        new_data_date = new_data_date.get('date_last_updated')
+        new_data_date = new_data.get('date_last_updated')
         if new_data_date:
             last_update = parse_date(new_data_date)
         else:
@@ -94,7 +95,7 @@ class Volume(ndb.Model):
                 )
 
         volume_doc = search.Document(
-            doc_id=self.identifier,
+            doc_id=str(self.identifier),
             fields=document_fields
         )
         if batch:
@@ -118,35 +119,36 @@ def volume_key(volume_data, create=True, reindex=False, batch=False):
     if isinstance(volume_data, Volume):
         volume_id = volume_data.key.id()
     if isinstance(volume_data, dict):
-        volume_id = volume['id']
+        volume_id = volume_data['id']
 
     key = ndb.Key(Volume, str(volume_id))
     volume = key.get()
+    changed = False
     if create and not volume:
-        if 'publisher' not in comicvine_volume:
+        if 'publisher' not in volume_data:
             if volume:
                 return key
             else:
                 cv = comicvine.load()
-                comicvine_volume = cv.fetch_volume(comicvine_volume['id'])
-        logging.info('Creating volume: %r', comicvine_volume)
-        publisher = comicvine_volume['publisher']['id']
-        publisher_key = publishers.publisher_key(comicvine_volume['publisher'])
+                volume_data = cv.fetch_volume(volume_data['id'])
+        logging.info('Creating volume: %r', volume_data)
+        publisher = volume_data['publisher']['id']
+        publisher_key = publishers.publisher_key(volume_data['publisher'])
         volume = Volume(
             key=key,
-            identifier=comicvine_volume['id'],
+            identifier=volume_data['id'],
             publisher=publisher_key,
             last_updated=datetime.min,
         )
 
-    if volume.has_updates(comicvine_volume):
-        logging.info('Volume has changes: %r', comicvine_volume)
+    if volume and volume.has_updates(volume_data):
         # Volume is new or has been info has been updated since last put
-        volume.apply_changes(comicvine_volume)
+        volume.apply_changes(volume_data)
         changed = True
 
     if changed:
-        logging.info('Saving volume updates: %r', comicvine_volume)
+        logging.info('Saving volume updates: %r[%r]',
+                     volume.identifier, volume.last_updated)
         if batch:
             return volume.put_async()
         volume.put()

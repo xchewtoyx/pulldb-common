@@ -26,17 +26,20 @@ def publisher_key(publisher_data, create=True):
 
     if isinstance(publisher_data, basestring):
         publisher_id = publisher_data
-    else:
+    if isinstance(publisher_data, int):
+        publisher_id = publisher_data
+    if isinstance(publisher_data, dict):
         publisher_id = publisher_data['id']
+
     key = ndb.Key(Publisher, str(publisher_id))
 
     if isinstance(publisher_data, dict):
         publisher = key.get()
         if not publisher and create:
-            if 'image' not in comicvine_publisher:
+            if 'image' not in publisher_data:
                 cv = comicvine.Comicvine()
                 publisher_data = cv.fetch_publisher(
-                    publisher_id['id'],
+                    publisher_id,
                     field_list='id,name,image',
                 )
             publisher = Publisher(
