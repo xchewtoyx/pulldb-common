@@ -7,6 +7,7 @@ class Stream(ndb.Model):
 
     Holds issue stream data.  Parent key should be a subscription.
     '''
+    name = ndb.StringProperty()
     publishers = ndb.KeyProperty(kind='Publisher', repeated=True)
     volumes = ndb.KeyProperty(kind='Volume', repeated=True)
     length = ndb.IntegerProperty()

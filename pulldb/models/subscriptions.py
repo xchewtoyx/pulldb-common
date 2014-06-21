@@ -15,7 +15,9 @@ class Subscription(ndb.Model):
 
     Holds subscription data. Parent should be User.
     '''
+    identifier = ndb.IntegerProperty()
     start_date = ndb.DateProperty(default=datetime.min)
+    stream = ndb.KeyProperty(kind='Stream')
     volume = ndb.KeyProperty(kind=volumes.Volume)
 
 @ndb.tasklet
@@ -28,7 +30,13 @@ def subscription_context(subscription):
         'publisher': publisher,
     })
 
-def subscription_key(volume_key, create=False):
+def subscription_key(volume_data, create=False):
+    if isinstance(volume_data, basestring):
+        subscription_id = volume_data
+    if isinstance(volume_data, ndb.Key):
+        subscription_id = volume_data.id()
+    if isinstance(volume_data, volumes.Volume):
+        subscription_id = volume_data.key.id()
     user = users.user_key()
     key = ndb.Key(
         Subscription, volume_key.id(),

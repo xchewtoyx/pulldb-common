@@ -4,6 +4,9 @@ import json
 
 from google.appengine.ext import ndb
 
+class PullDBModelException(Exception):
+    pass
+
 def model_to_dict(model):
     'Convert a model instance to a serialisable dict'
     model_dict = {
