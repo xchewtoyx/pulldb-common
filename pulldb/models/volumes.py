@@ -148,9 +148,8 @@ def volume_key(volume_data, create=True, reindex=False, batch=False):
     if changed:
         logging.info('Saving volume updates: %r', comicvine_volume)
         if batch:
-            volume.put_async()
-        else:
-            volume.put()
+            return volume.put_async()
+        volume.put()
 
     return key
 

@@ -180,7 +180,7 @@ def check_legacy(key, volume_key):
                 issue.apply_changes(legacy.json)
             issue.put()
 
-def issue_key(issue_data, create=True):
+def issue_key(issue_data, create=True, batch=False):
     # handle empty input gracefully
     if not issue_data:
         message = 'issue_key called with false input: %r' % issue_data
@@ -193,7 +193,7 @@ def issue_key(issue_data, create=True):
         issue_id = issue_data['id']
     key = ndb.Key(Issue, str(issue_id))
 
-    if isinstance(dict, comicvine_issue):
+    if isinstance(issue_data, dict):
         updated = False
         issue = key.get()
         if create and not issue:
@@ -211,6 +211,8 @@ def issue_key(issue_data, create=True):
 
         if updated:
             logging.info('Saving issue updates for %s', comicvine_issue['id'])
+            if batch:
+                return issue.put_async()
             issue.put()
 
     return key

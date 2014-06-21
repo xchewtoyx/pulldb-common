@@ -5,6 +5,7 @@ from google.appengine.ext import ndb
 
 # pylint: disable=F0401
 
+from pulldb.models import base
 from pulldb.models import users
 from pulldb.models import volumes
 
@@ -30,24 +31,32 @@ def subscription_context(subscription):
         'publisher': publisher,
     })
 
-def subscription_key(volume_data, create=False):
+def subscription_key(volume_data, user=None, create=False, batch=False):
     if isinstance(volume_data, basestring):
         subscription_id = volume_data
     if isinstance(volume_data, ndb.Key):
         subscription_id = volume_data.id()
     if isinstance(volume_data, volumes.Volume):
         subscription_id = volume_data.key.id()
-    user = users.user_key()
+    if not user:
+        user = users.user_key()
     key = ndb.Key(
         Subscription, volume_key.id(),
         parent=user,
     )
     subscription = key.get()
     if not subscription and create:
+        if not volume_key.get():
+            message = 'Cannot add subscription for invalid issue: %r' % (
+                volume_key.id()
+            )
+            raise volumes.NoSuchVolume(message)
         subscription = Subscription(
             key=key,
             volume=volume_key
         )
-        key = subscription.put()
-    if subscription:
-        return key
+        if batch:
+            return subscription
+        subscription.put()
+
+    return key
