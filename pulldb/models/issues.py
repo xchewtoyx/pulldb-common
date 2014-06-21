@@ -9,7 +9,6 @@ import httplib
 
 # pylint: disable=F0401
 from pulldb.models import base
-from pulldb.models import comicvine
 from pulldb.models.properties import ImageProperty
 from pulldb.models import volumes
 
@@ -180,7 +179,7 @@ def check_legacy(key, volume_key):
                 issue.apply_changes(legacy.json)
             issue.put()
 
-def issue_key(issue_data, create=True, batch=False):
+def issue_key(issue_data, volume_key=None, create=True, batch=False):
     # handle empty input gracefully
     if not issue_data:
         message = 'issue_key called with false input: %r' % issue_data
