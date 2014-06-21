@@ -141,10 +141,11 @@ def volume_key(volume_data, create=True, reindex=False, batch=False):
             last_updated=datetime.min,
         )
 
-    if volume and volume.has_updates(volume_data):
-        # Volume is new or has been info has been updated since last put
-        volume.apply_changes(volume_data)
-        changed = True
+    if volume:
+        if isinstance(volume_data, dict) and volume.has_updates(volume_data):
+            # Volume is new or has been info has been updated since last put
+            volume.apply_changes(volume_data)
+            changed = True
 
     if changed:
         logging.info('Saving volume updates: %r[%r]',

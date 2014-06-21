@@ -97,12 +97,12 @@ class Issue(ndb.Model):
         if not self.volume:
             volume_id = self.json.get('volume', {}).get('id')
             if volume_id:
-                documents_fields.append(
+                document_fields.append(
                     search.NumberField(name='volume_id', value=int(volume_id))
                 )
         return document_fields
 
-    def index_document(self, batch):
+    def index_document(self, batch=False):
         document_fields = [
             search.TextField(name='title', value=self.title),
             search.TextField(name='issue_number', value=self.issue_number),
@@ -115,7 +115,7 @@ class Issue(ndb.Model):
             )
 
         if self.json:
-            document_fields.extend(self.extract_fields())
+            document_fields.extend(self.extract_search_fields())
 
         if self.name:
             document_fields.append(
@@ -145,13 +145,13 @@ class Issue(ndb.Model):
         issue_data = self.json or {}
         updates = False
 
-        new_data_date = new_data.get('date_last_updated', '')
+        new_data_date = new_data.get('date_last_updated')
         if new_data_date:
             last_update = parse_date(new_data_date)
         else:
             last_update = datetime.now()
 
-        if new_data_date > self.last_updated:
+        if last_update > self.last_updated:
             updates = True
 
         if set(new_data.keys()) - set(issue_data.keys()):
@@ -197,20 +197,20 @@ def issue_key(issue_data, create=True, batch=False):
         updated = False
         issue = key.get()
         if create and not issue:
-            if not volume_key:
-                volume_key = volumes.volume_key(comicvine_issue['volume'])
+            volume_key = volumes.volume_key(issue_data['volume'])
             issue = Issue(
                 key = key,
-                identifier=comicvine_issue['id'],
+                identifier=issue_data['id'],
                 last_updated=datetime.min,
+                volume=volume_key,
             )
-        updated, last_update = issue.has_changes(comicvine_issue)
+        updated, last_update = issue.has_updates(issue_data)
         if updated:
-            issue.apply_changes(comicvine_issue)
+            issue.apply_changes(issue_data)
             updated = True
 
         if updated:
-            logging.info('Saving issue updates for %s', comicvine_issue['id'])
+            logging.info('Saving issue updates for %s', key.id())
             if batch:
                 return issue.put_async()
             issue.put()
