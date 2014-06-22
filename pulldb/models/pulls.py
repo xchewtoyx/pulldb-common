@@ -1,11 +1,13 @@
 # Copyright 2013 Russell Heilling
 from datetime import datetime
+import logging
 
 from google.appengine.ext import ndb
 
 from pulldb.models import base
 from pulldb.models import issues
 from pulldb.models import subscriptions
+from pulldb.models import users
 
 class NoSuchPull(base.PullDBModelException):
     pass
@@ -21,7 +23,7 @@ class Pull(ndb.Model):
     identifier = ndb.IntegerProperty()
     issue = ndb.KeyProperty(kind='Issue')
     pulled = ndb.BooleanProperty(default=False)
-    pubdate = ndb.DateTimeProperty(default=datetime.min)
+    pubdate = ndb.DateProperty(default=datetime.min)
     read = ndb.BooleanProperty(default=False)
     subscription = ndb.KeyProperty(kind='Subscription')
     volume = ndb.KeyProperty(kind='Volume')
@@ -68,24 +70,25 @@ def pull_key(data, create=True):
             raise NoSuchIssue('Cannot add pull for bad issue: %r' % pull_id)
         subscription_key = subscriptions.subscription_key(issue.volume)
         # TODO(rgh): Remove when data all converted
-        check_legacy(key, subscription)
+        check_legacy(key, subscription_key)
 
         pull = key.get()
         changed = False
         if not pull and create:
             pull = Pull(
                 key=key,
-                identifier=pull_id,
+                identifier=int(pull_id),
                 issue=issue_key,
                 pubdate=issue.pubdate,
-                subscription=subscription,
+                subscription=subscription_key,
+                volume=issue.volume,
             )
             changed = True
 
         if pull.pubdate != issue.pubdate:
             pull.pubdate = issue.pubdate
             changed = True
-        logging.info('Updating pull for issue %s', comicvine_issue['id'])
+        logging.info('Updating pull for issue %s', pull_id)
         pull.put()
 
     return key

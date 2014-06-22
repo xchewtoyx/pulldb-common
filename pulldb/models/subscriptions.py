@@ -34,10 +34,13 @@ def subscription_context(subscription):
 def subscription_key(volume_data, user=None, create=False, batch=False):
     if isinstance(volume_data, basestring):
         subscription_id = volume_data
+        volume_key = volumes.volume_key(volume_data)
     if isinstance(volume_data, ndb.Key):
         subscription_id = volume_data.id()
+        volume_key = volume_data
     if isinstance(volume_data, volumes.Volume):
         subscription_id = volume_data.key.id()
+        volume_key = volume_data.key
     if not user:
         user = users.user_key()
     key = ndb.Key(
@@ -47,7 +50,7 @@ def subscription_key(volume_data, user=None, create=False, batch=False):
     subscription = key.get()
     if not subscription and create:
         if not volume_key.get():
-            message = 'Cannot add subscription for invalid issue: %r' % (
+            message = 'Cannot add subscription for invalid volume: %r' % (
                 volume_key.id()
             )
             raise volumes.NoSuchVolume(message)
