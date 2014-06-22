@@ -6,6 +6,7 @@ from google.appengine.ext import ndb
 
 from pulldb.models import base
 from pulldb.models import issues
+from pulldb.models import streams
 from pulldb.models import subscriptions
 from pulldb.models import users
 
@@ -25,31 +26,14 @@ class Pull(ndb.Model):
     pulled = ndb.BooleanProperty(default=False)
     pubdate = ndb.DateProperty(default=datetime.min)
     read = ndb.BooleanProperty(default=False)
+    stream = ndb.KeyProperty(kind='Stream')
     subscription = ndb.KeyProperty(kind='Subscription')
     volume = ndb.KeyProperty(kind='Volume')
+    weight = ndb.FloatProperty(default=0.0)
 
-# TODO(rgh): Temporary lookup of old style pull key during transition
-def check_legacy(key, subscription_key):
-    pull = key.get()
-    if not pull:
-        legacy_pull = ndb.Key(Pull, key.id(), parent=subscription_key).get()
-        if legacy_pull:
-            issue_key = issues.issue_key(pull.key.id())
-            pull = Pull(
-                key=key,
-                identifier=key.id(),
-                issue=issue_key.id(),
-                subscription=subscription_key,
-            )
-            if legacy_pull.pubdate:
-                pull.pubdate=legacy_pull.pubdate
-            logging.info('Converted legacy pull: %r -> %r', legacy_pull.key,
-                         pull.key)
-            pull.put()
-
-def pull_key(data, user_key=None, create=True):
-    if not user_key:
-        user_key = users.user_key()
+def pull_key(data, user=None, create=True, batch=False):
+    if not user:
+        user = users.user_key()
     if not data:
         message = 'Pull key cannot be found for: %r' % data
         logging.warn(message)
