@@ -24,6 +24,7 @@ class Pull(ndb.Model):
     pubdate = ndb.DateTimeProperty(default=datetime.min)
     read = ndb.BooleanProperty(default=False)
     subscription = ndb.KeyProperty(kind='Subscription')
+    volume = ndb.KeyProperty(kind='Volume')
 
 # TODO(rgh): Temporary lookup of old style pull key during transition
 def check_legacy(key, subscription_key):
@@ -40,6 +41,8 @@ def check_legacy(key, subscription_key):
             )
             if legacy_pull.pubdate:
                 pull.pubdate=legacy_pull.pubdate
+            logging.info('Converted legacy pull: %r -> %r', legacy_pull.key,
+                         pull.key)
             pull.put()
 
 def pull_key(data, create=True):

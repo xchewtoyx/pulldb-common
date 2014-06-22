@@ -9,6 +9,8 @@ class PullDBModelException(Exception):
 
 def model_to_dict(model):
     'Convert a model instance to a serialisable dict'
+    if not model:
+        return {}
     model_dict = {
         'key': model.key.urlsafe(),
     }
