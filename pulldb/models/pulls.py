@@ -47,7 +47,7 @@ def check_legacy(key, subscription_key):
                          pull.key)
             pull.put()
 
-def pull_key(data, create=True):
+def pull_key(data, create=True, batch=False):
     user = users.user_key()
     if not data:
         message = 'Pull key cannot be found for: %r' % data
@@ -69,8 +69,6 @@ def pull_key(data, create=True):
         if not issue:
             raise NoSuchIssue('Cannot add pull for bad issue: %r' % pull_id)
         subscription_key = subscriptions.subscription_key(issue.volume)
-        # TODO(rgh): Remove when data all converted
-        check_legacy(key, subscription_key)
 
         pull = key.get()
         changed = False
@@ -89,6 +87,8 @@ def pull_key(data, create=True):
             pull.pubdate = issue.pubdate
             changed = True
         logging.info('Updating pull for issue %s', pull_id)
+        if batch:
+            return pull
         pull.put()
 
     return key
