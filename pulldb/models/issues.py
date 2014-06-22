@@ -2,6 +2,7 @@
 from datetime import datetime, date
 from dateutil.parser import parse as parse_date
 import logging
+import re
 
 from google.appengine.api import search
 from google.appengine.ext import ndb
@@ -69,9 +70,13 @@ class Issue(ndb.Model):
         contributors = self.json.get('person_credits')
         if contributors:
             for person in contributors:
+                if re.match(r'^[A-Za-z][A-Za-z0-9_]*$', person['role']):
+                    role = person['role']
+                else:
+                    role = 'person'
                 document_fields.append(
                     search.TextField(
-                        name=person['role'], value=person['name']
+                        name=role, value=person['name']
                     )
                 )
         description = self.json.get('description')
