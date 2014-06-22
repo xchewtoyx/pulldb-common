@@ -60,16 +60,16 @@ class Volume(ndb.Model):
         if new_data_date:
             last_update = parse_date(new_data_date)
         else:
-            last_update = datetime.now()
+            last_update = datetime.now().date()
 
         if last_update > self.last_updated:
-            updated = True
+            updates = True
 
         if set(new_data.keys()) - set(volume_data.keys()):
             # keys differ between stored and fetched
-            updated = True
+            updates = True
 
-        return updated, last_update
+        return updates, last_update
 
     def index_document(self, batch=False):
         document_fields = [
