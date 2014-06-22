@@ -17,6 +17,7 @@ class Subscription(ndb.Model):
     Holds subscription data. Parent should be User.
     '''
     identifier = ndb.IntegerProperty()
+    shard = ndb.IntegerProperty(default=-1)
     start_date = ndb.DateProperty(default=datetime.min)
     stream = ndb.KeyProperty(kind='Stream')
     volume = ndb.KeyProperty(kind=volumes.Volume)
