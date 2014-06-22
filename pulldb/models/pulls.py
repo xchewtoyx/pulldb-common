@@ -47,8 +47,9 @@ def check_legacy(key, subscription_key):
                          pull.key)
             pull.put()
 
-def pull_key(data, create=True, batch=False):
-    user = users.user_key()
+def pull_key(data, user_key=None, create=True):
+    if not user_key:
+        user_key = users.user_key()
     if not data:
         message = 'Pull key cannot be found for: %r' % data
         logging.warn(message)
@@ -61,14 +62,15 @@ def pull_key(data, create=True, batch=False):
     if isinstance(data, issues.Issue):
         pull_id = data.key.id()
         issue = data
-    key = ndb.Key(Pull, pull_id, parent=user)
+    key = ndb.Key(Pull, pull_id, parent=user_key)
 
-    if not isinstance(data, basestring):
+    if not isinstance(data, basestring) and create:
         issue_key = issues.issue_key(pull_id)
         issue = issue_key.get()
         if not issue:
             raise NoSuchIssue('Cannot add pull for bad issue: %r' % pull_id)
-        subscription_key = subscriptions.subscription_key(issue.volume)
+        subscription_key = subscriptions.subscription_key(
+            issue.volume, user=user_key)
 
         pull = key.get()
         changed = False
