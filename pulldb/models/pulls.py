@@ -23,8 +23,9 @@ class Pull(ndb.Model):
     '''
     identifier = ndb.IntegerProperty()
     issue = ndb.KeyProperty(kind='Issue')
-    pulled = ndb.BooleanProperty(default=False)
     pubdate = ndb.DateProperty(default=datetime.min)
+    publisher = ndb.KeyProperty(kind='Publisher')
+    pulled = ndb.BooleanProperty(default=False)
     read = ndb.BooleanProperty(default=False)
     stream = ndb.KeyProperty(kind='Stream')
     subscription = ndb.KeyProperty(kind='Subscription')
@@ -67,6 +68,9 @@ def pull_key(data, user=None, create=True, batch=False):
                 subscription=subscription_key,
                 volume=issue.volume,
             )
+            volume = issue.volume.get()
+            if volume:
+                pull.publisher = volume.publisher
             changed = True
 
         if pull.pubdate != issue.pubdate:
