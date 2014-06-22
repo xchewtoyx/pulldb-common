@@ -27,6 +27,7 @@ class Pull(ndb.Model):
     publisher = ndb.KeyProperty(kind='Publisher')
     pulled = ndb.BooleanProperty(default=False)
     read = ndb.BooleanProperty(default=False)
+    shard = ndb.IntegerProperty(default=-1)
     stream = ndb.KeyProperty(kind='Stream')
     subscription = ndb.KeyProperty(kind='Subscription')
     volume = ndb.KeyProperty(kind='Volume')
