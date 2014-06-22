@@ -61,7 +61,7 @@ class Volume(ndb.Model):
 
         new_data_date = new_data.get('date_last_updated')
         if new_data_date:
-            last_update = parse_date(new_data_date)
+            last_update = parse_date(new_data_date).date()
         else:
             last_update = datetime.now().date()
 
