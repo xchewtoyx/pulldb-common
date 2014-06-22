@@ -15,6 +15,9 @@ from pulldb.models.properties import ImageProperty
 
 # pylint: disable=W0232,C0103,E1101,R0201,R0903,R0902
 
+class NoSuchVolume(base.PullDBModelException):
+    pass
+
 class Volume(ndb.Model):
     '''Volume object in datastore.
 
