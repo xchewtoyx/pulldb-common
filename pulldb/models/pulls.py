@@ -46,7 +46,7 @@ def pull_key(data, user=None, create=True, batch=False):
     if isinstance(data, issues.Issue):
         pull_id = data.key.id()
         issue = data
-    key = ndb.Key(Pull, pull_id, parent=user_key)
+    key = ndb.Key(Pull, pull_id, parent=user)
 
     if not isinstance(data, basestring) and create:
         issue_key = issues.issue_key(pull_id)
@@ -54,7 +54,7 @@ def pull_key(data, user=None, create=True, batch=False):
         if not issue:
             raise NoSuchIssue('Cannot add pull for bad issue: %r' % pull_id)
         subscription_key = subscriptions.subscription_key(
-            issue.volume, user=user_key)
+            issue.volume, user=user)
 
         pull = key.get()
         changed = False
