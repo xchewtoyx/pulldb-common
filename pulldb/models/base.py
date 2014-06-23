@@ -13,10 +13,12 @@ def model_to_dict(model):
         return {}
     model_dict = {
         'key': model.key.urlsafe(),
+        'id': model.key.id(),
     }
     for key, value in model.to_dict().iteritems():
         if isinstance(value, ndb.Key):
             model_dict[key] = value.urlsafe()
+            model_dict['%s_id' % key] = value.id()
         elif isinstance(value, datetime.date):
             model_dict[key] = value.isoformat()
         else:
