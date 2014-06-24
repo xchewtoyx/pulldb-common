@@ -15,10 +15,15 @@ def model_to_dict(model, json=False):
         'key': model.key.urlsafe(),
         'id': model.key.id(),
     }
-    include = self.projection()
-    if json:
-        include.append('json')
-    for key, value in model.to_dict(include=include).iteritems():
+    if hasattr(model, 'projection'):
+        include = model.projection()
+        if json:
+            include.append('json')
+        property_dict = model.to_dict(include=include)
+    else:
+        property_dict = model_to_dict()
+
+    for key, value in property_dict.items()
         if key == 'json' and not json:
             continue
         if isinstance(value, ndb.Key):
@@ -28,6 +33,7 @@ def model_to_dict(model, json=False):
             model_dict[key] = value.isoformat()
         else:
             model_dict[key] = unicode(value)
+
     return model_dict
 
 def model_to_json(model):
