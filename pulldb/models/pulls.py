@@ -23,6 +23,7 @@ class Pull(ndb.Model):
     '''
     identifier = ndb.IntegerProperty()
     issue = ndb.KeyProperty(kind='Issue')
+    name = ndb.StringProperty()
     pubdate = ndb.DateProperty(default=datetime.min)
     publisher = ndb.KeyProperty(kind='Publisher')
     pulled = ndb.BooleanProperty(default=False)
@@ -65,6 +66,7 @@ def pull_key(data, user=None, create=True, batch=False):
                 key=key,
                 identifier=int(pull_id),
                 issue=issue_key,
+                name=issue.name,
                 pubdate=issue.pubdate,
                 subscription=subscription_key,
                 volume=issue.volume,
