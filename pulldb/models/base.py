@@ -7,7 +7,7 @@ from google.appengine.ext import ndb
 class PullDBModelException(Exception):
     pass
 
-def model_to_dict(model):
+def model_to_dict(model, json=False):
     'Convert a model instance to a serialisable dict'
     if not model:
         return {}
@@ -16,6 +16,8 @@ def model_to_dict(model):
         'id': model.key.id(),
     }
     for key, value in model.to_dict().iteritems():
+        if key == 'json' and not json:
+            continue
         if isinstance(value, ndb.Key):
             model_dict[key] = value.urlsafe()
             model_dict['%s_id' % key] = value.id()
