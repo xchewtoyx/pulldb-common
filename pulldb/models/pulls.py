@@ -32,7 +32,7 @@ class Pull(ndb.Model):
     stream = ndb.KeyProperty(kind='Stream')
     subscription = ndb.KeyProperty(kind='Subscription')
     volume = ndb.KeyProperty(kind='Volume')
-    weight = ndb.FloatProperty(default=0.0)
+    weight = ndb.FloatProperty(default=1.0)
 
 def pull_key(data, user=None, create=True, batch=False):
     if not user:
