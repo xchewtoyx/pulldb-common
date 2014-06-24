@@ -41,6 +41,22 @@ class Issue(ndb.Model):
     changed = ndb.DateTimeProperty(auto_now=True)
     indexed = ndb.BooleanProperty(default=False)
 
+    @classmethod
+    def projection(cls):
+        return [
+            cls.identifier,
+            cls.image,
+            cls.issue_number,
+            cls.last_updated,
+            cls.pubdate,
+            cls.site_detail_url,
+            cls.title,
+            cls.volume,
+            cls.indexed,
+            cls.name,
+            cls.shard,
+        ]
+
     def apply_changes(self, issue_data):
         self.json = issue_data
         self.name='%s %s' % (

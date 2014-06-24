@@ -38,6 +38,21 @@ class Volume(ndb.Model):
     json = ndb.JsonProperty(indexed=False)
     shard = ndb.IntegerProperty(default=-1)
 
+    @classmethod
+    def projection(cls):
+        return [
+            cls.identifier,
+            cls.image,
+            cls.issue_count,
+            cls.last_updated,
+            cls.name,
+            cls.publisher,
+            cls.site_detail_url,
+            cls.start_year,
+            cls.indexed,
+            cls.shard,
+        ]
+
     def apply_changes(self, data):
         self.json=data
         self.name=data.get('name', self.name)

@@ -18,6 +18,14 @@ class Publisher(ndb.Model):
     image = ImageProperty()
     json = ndb.JsonProperty(indexed=False)
 
+    @classmethod
+    def projection(cls):
+        return [
+            cls.identifier,
+            cls.name,
+            cls.image,
+        ]
+
 def publisher_key(publisher_data, create=True):
     if not publisher_data:
         message = 'Cannot lookup publisher for: %r' % publisher_data
