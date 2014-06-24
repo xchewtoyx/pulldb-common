@@ -19,9 +19,9 @@ def model_to_dict(model, json=False):
         include = model.projection()
         if json:
             include.append('json')
-        property_dict = model.to_dict(model, include=include)
+        property_dict = model.to_dict(include=include)
     else:
-        property_dict = model.to_dict(model)
+        property_dict = model.to_dict()
 
     for key, value in property_dict.items():
         if key == 'json' and not json:
