@@ -19,11 +19,11 @@ def model_to_dict(model, json=False):
         include = model.projection()
         if json:
             include.append('json')
-        property_dict = model.to_dict(include=include)
+        property_dict = model.to_dict(model, include=include)
     else:
-        property_dict = model_to_dict()
+        property_dict = model.to_dict(model)
 
-    for key, value in property_dict.items()
+    for key, value in property_dict.items():
         if key == 'json' and not json:
             continue
         if isinstance(value, ndb.Key):
