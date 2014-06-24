@@ -15,7 +15,10 @@ def model_to_dict(model, json=False):
         'key': model.key.urlsafe(),
         'id': model.key.id(),
     }
-    for key, value in model.to_dict().iteritems():
+    include = self.projection()
+    if json:
+        include.append('json')
+    for key, value in model.to_dict(include=include).iteritems():
         if key == 'json' and not json:
             continue
         if isinstance(value, ndb.Key):

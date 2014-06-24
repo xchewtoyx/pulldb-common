@@ -41,16 +41,9 @@ class Volume(ndb.Model):
     @classmethod
     def projection(cls):
         return [
-            cls.identifier,
-            cls.image,
-            cls.issue_count,
-            cls.last_updated,
-            cls.name,
-            cls.publisher,
-            cls.site_detail_url,
-            cls.start_year,
-            cls.indexed,
-            cls.shard,
+            'identifier', 'image', 'issue_count', 'last_updated',
+            'name', 'publisher', 'site_detail_url', 'start_year',
+            'indexed', 'shard',
         ]
 
     def apply_changes(self, data):

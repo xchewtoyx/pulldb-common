@@ -20,11 +20,7 @@ class Publisher(ndb.Model):
 
     @classmethod
     def projection(cls):
-        return [
-            cls.identifier,
-            cls.name,
-            cls.image,
-        ]
+        return [ 'identifier', 'name', 'image' ]
 
 def publisher_key(publisher_data, create=True):
     if not publisher_data:

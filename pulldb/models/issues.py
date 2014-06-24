@@ -44,17 +44,9 @@ class Issue(ndb.Model):
     @classmethod
     def projection(cls):
         return [
-            cls.identifier,
-            cls.image,
-            cls.issue_number,
-            cls.last_updated,
-            cls.pubdate,
-            cls.site_detail_url,
-            cls.title,
-            cls.volume,
-            cls.indexed,
-            cls.name,
-            cls.shard,
+            'identifier', 'image', 'issue_number', 'last_updated',
+            'pubdate', 'site_detail_url', 'title', 'volume',
+            'indexed', 'name', 'shard',
         ]
 
     def apply_changes(self, issue_data):
