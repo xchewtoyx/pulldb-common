@@ -58,6 +58,7 @@ class Issue(ndb.Model):
         self.title = issue_data.get('name')
         self.issue_number = issue_data.get('issue_number', '')
         self.site_detail_url = issue_data.get('site_detail_url')
+        pubdate = None
         if issue_data.get('store_date'):
             pubdate = parse_date(issue_data['store_date'])
         elif issue_data.get('cover_date'):
