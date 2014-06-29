@@ -24,9 +24,13 @@ class Volume(ndb.Model):
     Holds volume data.
     '''
     # Attributes from comicvine data
+    first_issue = ndb.KeyProperty(kind='Issue')
+    first_issue_date = ndb.DateTimeProperty()
     identifier = ndb.IntegerProperty()
     image = ImageProperty()
     issue_count = ndb.IntegerProperty()
+    last_issue = ndb.KeyProperty(kind='Issue')
+    last_issue_date = ndb.DateTimeProperty()
     last_updated = ndb.DateTimeProperty(default=datetime.min)
     name = ndb.StringProperty()
     publisher = ndb.KeyProperty(kind=publishers.Publisher)
@@ -34,6 +38,7 @@ class Volume(ndb.Model):
     start_year = ndb.IntegerProperty()
     # Attributes containting local data
     changed = ndb.DateTimeProperty(auto_now=True)
+    complete = ndb.BooleanProperty(default=False)
     indexed = ndb.BooleanProperty(default=False)
     json = ndb.JsonProperty(indexed=False)
     shard = ndb.IntegerProperty(default=-1)
@@ -41,9 +46,9 @@ class Volume(ndb.Model):
     @classmethod
     def projection(cls):
         return [
-            'identifier', 'image', 'issue_count', 'last_updated',
-            'name', 'publisher', 'site_detail_url', 'start_year',
-            'indexed', 'shard',
+            'first_issue_date', 'identifier', 'image', 'issue_count',
+            'last_issue_date', 'last_updated', 'name', 'publisher',
+            'site_detail_url', 'start_year', 'indexed', 'shard',
         ]
 
     def apply_changes(self, data):
@@ -55,6 +60,23 @@ class Volume(ndb.Model):
             self.start_year=int(data['start_year'])
         if data.get('image'):
             self.image = data['image'].get('small_url')
+        if data.get('first_issue'):
+            first_issue_key = issues.issue_key(
+                data['first_issue']['id']), create=False
+            )
+            if self.first_issue != first_issue_key:
+                self.first_issue = first_issue_key
+                # Don't fetch the issue data here, queue for batch refresh
+                self.complete = False
+        if data.get('last_issue'):
+            last_issue_key = issues.issue_key(
+                data['last_issue']['id']), create=False
+            )
+            if self.last_issue != last_issue_key:
+                self.last_issue = last_issue_key
+                # Don't fetch the issue data here, queue for batch refresh
+                self.complete = False
+
         last_updated = data.get('date_last_updated')
         if last_updated:
             last_updated = parse_date(last_updated)
@@ -152,8 +174,8 @@ def volume_key(volume_data, create=True, reindex=False, batch=False):
             last_updated=datetime.min,
         )
 
-    if volume:
-        if isinstance(volume_data, dict) and volume.has_updates(volume_data):
+    if volume and isinstance(volume_data, dict):
+        if volume.has_updates(volume_data):
             # Volume is new or has been info has been updated since last put
             volume.apply_changes(volume_data)
             changed = True

@@ -16,11 +16,40 @@ class Subscription(ndb.Model):
 
     Holds subscription data. Parent should be User.
     '''
+    changed = ndb.DateTimeProperty(auto_now=True)
     identifier = ndb.IntegerProperty()
     shard = ndb.IntegerProperty(default=-1)
     start_date = ndb.DateProperty(default=datetime.min)
     stream = ndb.KeyProperty(kind='Stream')
     volume = ndb.KeyProperty(kind=volumes.Volume)
+    volume_first_issue = ndb.KeyProperty(kind='Issue')
+    volume_first_issue_date = ndb.DateTimeProperty()
+    volume_last_issue = ndb.KeyProperty(kind='Issue')
+    volume_last_issue_date = ndb.DateTimeProperty()
+
+@ndb.tasklet
+def refresh_subscription(subscription):
+    volume = yield subscription.volume.get_async()
+    changed = False
+    if volume.first_issue:
+        if subscription.volume_first_issue != volume.first_issue:
+            subscription.volume_first_issue = volume.first_issue
+            changed = True
+        if subscription.volume_first_issue_date != volume.first_issue_date:
+            subscription.volume_first_issue_date = volume.first_issue_date
+            changed = True
+    if volume.last_issue:
+        if subscription.volume_last_issue != volume.last_issue:
+            subscription.volume_last_issue = volume.last_issue
+            changed = True
+        if subscription.volume_last_issue_date != volume.last_issue_date:
+            subscription.volume_last_issue_date = volume.last_issue_date
+            changed = True
+
+    if changed:
+        yield subscription.put_async()
+
+    raise ndb.Return(changed)
 
 @ndb.tasklet
 def subscription_context(subscription):
