@@ -70,7 +70,7 @@ class Volume(ndb.Model):
                 self.complete = False
         if data.get('last_issue'):
             last_issue_key = issues.issue_key(
-                data['last_issue']['id']), create=False
+                data['last_issue']['id'], create=False
             )
             if self.last_issue != last_issue_key:
                 self.last_issue = last_issue_key
