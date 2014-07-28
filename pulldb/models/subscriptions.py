@@ -62,6 +62,8 @@ def subscription_context(subscription):
     })
 
 def subscription_key(volume_data, user=None, create=False, batch=False):
+    if isinstance(volume_data, int):
+        volume_data = str(volume_data)
     if isinstance(volume_data, basestring):
         subscription_id = volume_data
         volume_key = volumes.volume_key(volume_data)
