@@ -62,7 +62,7 @@ class Volume(ndb.Model):
             self.image = data['image'].get('small_url')
         if data.get('first_issue'):
             first_issue_key = issues.issue_key(
-                data['first_issue']['id']), create=False
+                data['first_issue']['id'], create=False
             )
             if self.first_issue != first_issue_key:
                 self.first_issue = first_issue_key
