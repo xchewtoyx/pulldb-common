@@ -1,6 +1,7 @@
 # Copyright 2013 Russell Heilling
 import logging
 
+from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
@@ -19,7 +20,10 @@ def user_key(app_user=None, create=True, async=False):
     if not app_user:
         app_user = users.get_current_user()
     logging.debug("Looking up user key for: %r", app_user)
-    key = None
+    key = memcache.get(app_user, namespace='user')
+    if key:
+        return key
+
     if async and not create:
         user = User.query(User.userid == app_user.user_id()).get_async()
         key = user
@@ -27,6 +31,7 @@ def user_key(app_user=None, create=True, async=False):
         user = User.query(User.userid == app_user.user_id()).get()
         if user:
             key = user.key
+            memcache.add(app_user, key, namespace='user')
 
     if create and not user:
         logging.info('Adding user to datastore: %s', app_user.nickname())
@@ -37,5 +42,6 @@ def user_key(app_user=None, create=True, async=False):
         else:
             user.put()
             key = user.key
+            memcache.add(app_user, key, namespace='user')
 
     return key
