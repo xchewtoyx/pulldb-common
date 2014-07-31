@@ -66,7 +66,7 @@ class Issue(ndb.Model):
         if isinstance(pubdate, date):
             self.pubdate=pubdate
         if 'image' in issue_data:
-            self.image = issue_data['image'].get('small_url')
+            self.image = issue_data.get('image', {}).get('small_url')
         if issue_data.get('date_last_updated'):
             last_update = parse_date(issue_data['date_last_updated'])
         else:
