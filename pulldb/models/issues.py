@@ -11,7 +11,6 @@ import httplib
 # pylint: disable=F0401
 from pulldb.models import base
 from pulldb.models.properties import ImageProperty
-from pulldb.models import volumes
 
 # pylint: disable=W0232,C0103,E1101,R0201,R0903,R0902
 
@@ -66,8 +65,10 @@ class Issue(ndb.Model):
             pubdate = parse_date(issue_data['cover_date'])
         if isinstance(pubdate, date):
             self.pubdate=pubdate
-        if 'image' in issue_data:
-            self.image = issue_data.get('image', {}).get('small_url')
+        try:
+            self.image = issue_data['image']['small_url']
+        except (KeyError, TypeError):
+            self.image = None
         if issue_data.get('date_last_updated'):
             last_update = parse_date(issue_data['date_last_updated'])
         else:
@@ -211,7 +212,7 @@ def issue_key(issue_data, volume_key=None, create=True, batch=False):
         updated = False
         issue = key.get()
         if create and not issue:
-            volume_key = volumes.volume_key(issue_data['volume'])
+            volume_key = ndb.Key('Volume', issue_data['volume']['id'])
             issue = Issue(
                 key = key,
                 identifier=issue_data['id'],
