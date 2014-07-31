@@ -1,6 +1,7 @@
 # Copyright 2013 Russell Heilling
 import logging
 
+from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
@@ -15,18 +16,32 @@ class User(ndb.Model):
     oauth_token = ndb.StringProperty()
     trusted = ndb.BooleanProperty()
 
-def user_key(app_user=None, create=True):
+def user_key(app_user=None, create=True, async=False):
     if not app_user:
         app_user = users.get_current_user()
     logging.debug("Looking up user key for: %r", app_user)
-    key = None
-    user = User.query(User.userid == app_user.user_id()).get()
-    if user:
-        key = user.key
-    elif create:
+    key = memcache.get(app_user.user_id(), namespace='user')
+    if key:
+        return key
+
+    if async and not create:
+        user = User.query(User.userid == app_user.user_id()).get_async()
+        key = user
+    else:
+        user = User.query(User.userid == app_user.user_id()).get()
+        if user:
+            key = user.key
+            memcache.add(app_user.user_id(), key, namespace='user')
+
+    if create and not user:
         logging.info('Adding user to datastore: %s', app_user.nickname())
         user = User(userid=app_user.user_id(),
                     nickname=app_user.nickname())
-        user.put()
-        key = user.key
-    return user.key
+        if async:
+            key = user.put_async()
+        else:
+            user.put()
+            key = user.key
+            memcache.add(app_user.user_id(), key, namespace='user')
+
+    return key

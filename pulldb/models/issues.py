@@ -39,6 +39,7 @@ class Issue(ndb.Model):
     json = ndb.JsonProperty(indexed=False)
     name = ndb.StringProperty()
     changed = ndb.DateTimeProperty(auto_now=True)
+    complete = ndb.BooleanProperty(default=False)
     indexed = ndb.BooleanProperty(default=False)
 
     @classmethod
