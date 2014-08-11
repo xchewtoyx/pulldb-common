@@ -25,12 +25,12 @@ class Volume(ndb.Model):
     '''
     # Attributes from comicvine data
     first_issue = ndb.KeyProperty(kind='Issue')
-    first_issue_date = ndb.DateTimeProperty()
+    first_issue_date = ndb.DateProperty()
     identifier = ndb.IntegerProperty()
     image = ImageProperty()
     issue_count = ndb.IntegerProperty()
     last_issue = ndb.KeyProperty(kind='Issue')
-    last_issue_date = ndb.DateTimeProperty()
+    last_issue_date = ndb.DateProperty()
     last_updated = ndb.DateTimeProperty(default=datetime.min)
     name = ndb.StringProperty()
     publisher = ndb.KeyProperty(kind=publishers.Publisher)
