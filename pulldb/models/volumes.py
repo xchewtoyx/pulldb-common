@@ -41,6 +41,7 @@ class Volume(ndb.Model):
     complete = ndb.BooleanProperty(default=False)
     indexed = ndb.BooleanProperty(default=False)
     json = ndb.JsonProperty(indexed=False)
+    fast_shard = ndb.IntegerProperty(default=-1)
     shard = ndb.IntegerProperty(default=-1)
 
     @classmethod
