@@ -62,17 +62,13 @@ class Volume(ndb.Model):
         if data.get('image'):
             self.image = data['image'].get('small_url')
         if data.get('first_issue'):
-            first_issue_key = issues.issue_key(
-                data['first_issue']['id'], create=False
-            )
+            first_issue_key = ndb.Key('Issue', data['first_issue']['id'])
             if self.first_issue != first_issue_key:
                 self.first_issue = first_issue_key
                 # Don't fetch the issue data here, queue for batch refresh
                 self.complete = False
         if data.get('last_issue'):
-            last_issue_key = issues.issue_key(
-                data['last_issue']['id'], create=False
-            )
+            last_issue_key = ndb.Key('Issue', data['last_issue']['id'])
             if self.last_issue != last_issue_key:
                 self.last_issue = last_issue_key
                 # Don't fetch the issue data here, queue for batch refresh

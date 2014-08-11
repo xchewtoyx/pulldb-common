@@ -20,7 +20,7 @@ def user_key(app_user=None, create=True, async=False):
     if not app_user:
         app_user = users.get_current_user()
     logging.debug("Looking up user key for: %r", app_user)
-    key = memcache.get(app_user, namespace='user')
+    key = memcache.get(app_user.user_id(), namespace='user')
     if key:
         return key
 
@@ -31,7 +31,7 @@ def user_key(app_user=None, create=True, async=False):
         user = User.query(User.userid == app_user.user_id()).get()
         if user:
             key = user.key
-            memcache.add(app_user, key, namespace='user')
+            memcache.add(app_user.user_id(), key, namespace='user')
 
     if create and not user:
         logging.info('Adding user to datastore: %s', app_user.nickname())
@@ -42,6 +42,6 @@ def user_key(app_user=None, create=True, async=False):
         else:
             user.put()
             key = user.key
-            memcache.add(app_user, key, namespace='user')
+            memcache.add(app_user.user_id(), key, namespace='user')
 
     return key

@@ -61,15 +61,13 @@ class OauthHandler(BaseHandler):
 class TaskHandler(BaseHandler):
     def dispatch(self):
         self.scope = 'https://www.googleapis.com/auth/userinfo.email'
-        user = users.get_current_user()
-        if not user and 'X-Appengine-Cron' in self.request.headers:
-            user = users.User('russell+cron@heilling.net')
         try:
-            if not user:
-                user = oauth.get_current_user(self.scope)
+            user = oauth.get_current_user(self.scope)
         except oauth.OAuthRequestError as error:
-            logging.warn('Unable to determine user for request')
-            logging.debug(error)
+            user = users.get_current_user()
+            if not user and 'X-Appengine-Cron' in self.request.headers:
+                user = users.User('russell+cron@heilling.net')
+        if not user:
             self.abort(401)
         self.user = user
         logging.info('Request authorized by %r', user)
