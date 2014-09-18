@@ -44,7 +44,7 @@ class Comicvine(object):
             else:
                 break
             # Exponential backoff with random delay in case of error
-            sleep(2**i * 0.1 + random.random())
+            sleep(2**i * 0.1 + random())
         return response
 
     def _fetch_url(self, path, deadline=5, **kwargs):
