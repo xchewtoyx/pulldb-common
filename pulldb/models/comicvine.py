@@ -35,10 +35,10 @@ class Comicvine(object):
             resource = tokens[1]
             return partial(self._search_resource, resource)
 
-    def _fetch_with_retry(self, retries=3, *args, **kwargs):
+    def _fetch_with_retry(self, url, retries=3, *args, **kwargs):
         for i in range(retries):
             try:
-                response = urlfetch.fetch(*args, **kwargs)
+                response = urlfetch.fetch(url, *args, **kwargs)
             except urlfetch_errors.DeadlineExceededError as e:
                 logging.exception(e)
             else:
