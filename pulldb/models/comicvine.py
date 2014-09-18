@@ -2,10 +2,12 @@ from functools import partial
 import json
 import logging
 from math import ceil
+from random import random
+from time import sleep
 from urllib import urlencode
 
 from google.appengine.api import memcache
-from google.appengine.api import urlfetch
+from google.appengine.api import urlfetch, urlfetch_errors
 from google.appengine.ext import ndb
 
 from pulldb.models.admin import Setting
@@ -33,6 +35,18 @@ class Comicvine(object):
             resource = tokens[1]
             return partial(self._search_resource, resource)
 
+    def _fetch_with_retry(self, retries=3, *args, **kwargs):
+        for i in range(retries):
+            try:
+                response = urlfetch.fetch(*args, **kwargs)
+            except urlfetch_errors.DeadlineExceededError as e:
+                logging.exception(e)
+            else:
+                break
+            # Exponential backoff with random delay in case of error
+            sleep(2**i * 0.1 + random.random())
+        return response
+
     def _fetch_url(self, path, deadline=5, **kwargs):
         query = {
             'api_key': self.api_key,
@@ -43,7 +57,7 @@ class Comicvine(object):
         resource_url = '%s/%s?%s' % (
             self.api_base, path, query_string)
         logging.debug('Fetching comicvine resource: %s', resource_url)
-        response = urlfetch.fetch(resource_url, deadline=deadline)
+        response = self._fetch_with_retry(resource_url, deadline=deadline)
         try:
             reply = json.loads(response.content)
         except ValueError as e:
