@@ -103,10 +103,10 @@ class Comicvine(object):
         response = self._fetch_url(path, filter=filter_string, **kwargs)
         pages = self._response_pages(response)
         for index in range(2, pages+1):
-            expected_offset = (index-1) * response_page['limit']
+            expected_offset = (index-1) * response['limit']
             response_page = self._fetch_url(
                 path, filter=filter_string, page=index,
-                offset=expected_offset, **kwargs))
+                offset=expected_offset, **kwargs)
             if response_page['offset'] != expected_offset:
                 logging.warn(
                     'Possible API Error: page=%r, offset=%r, '
