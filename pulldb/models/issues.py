@@ -167,11 +167,17 @@ class Issue(ndb.Model):
             last_update = datetime.now()
 
         if last_update > self.last_updated:
+            logging.debug('Issue data newer than stored %r > %r',
+                          last_update, self.last_updated)
             updates = True
 
         if set(new_data.keys()) - set(issue_data.keys()):
             # keys differ between stored and fetched
-            updated = True
+            logging.debug('Issue data differes from stored: '
+                          '%r(old) - %r(new) = %r',
+                          issue_data.keys(), new_data.keys(),
+                          set(issue_data.keys()) - set(new_data.keys()))
+            updates = True
 
         return updates, last_update
 
