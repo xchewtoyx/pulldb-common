@@ -47,9 +47,14 @@ class BaseHandler(webapp2.RequestHandler):
         return template_values
 
     def dispatch(self):
+        if comicvine._API:
+            baseline = comicvine._API.count
+        else:
+            baseline = 0
         super(BaseHandler, self).dispatch()
         if comicvine._API:
-            logging.info('Comicvine api call count: %d', comicvine._API.count)
+            logging.info('Comicvine api call count: %d',
+                         comicvine._API.count - baseline)
 
 
 class OauthHandler(BaseHandler):
