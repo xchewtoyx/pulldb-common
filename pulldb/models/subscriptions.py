@@ -18,6 +18,7 @@ class Subscription(ndb.Model):
     '''
     changed = ndb.DateTimeProperty(auto_now=True)
     identifier = ndb.IntegerProperty()
+    fresh = ndb.BooleanProperty(default=False)
     shard = ndb.IntegerProperty(default=-1)
     start_date = ndb.DateProperty(default=datetime.min)
     stream = ndb.KeyProperty(kind='Stream')
