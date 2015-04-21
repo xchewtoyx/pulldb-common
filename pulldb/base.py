@@ -11,6 +11,7 @@ import webapp2
 from webapp2 import Route # pylint: disable=W0611
 
 from pulldb import util
+from pulldb.models import comicvine
 
 class BaseHandler(webapp2.RequestHandler):
     def __init__(self, *args, **kwargs):
@@ -45,6 +46,12 @@ class BaseHandler(webapp2.RequestHandler):
         template_values.update(self.get_user_info())
         return template_values
 
+    def dispatch(self):
+        super(BaseHandler, self).dispatch()
+        if comicvine._API:
+            logging.info('Comicvine api call count: %d', comicvine._API.count)
+
+
 class OauthHandler(BaseHandler):
     def dispatch(self):
         self.scope = 'https://www.googleapis.com/auth/userinfo.email'
@@ -56,7 +63,8 @@ class OauthHandler(BaseHandler):
             self.abort(401)
         self.user = user
         logging.info('Request authorized by %r', user)
-        BaseHandler.dispatch(self)
+        super(OauthHandler, self).dispatch()
+
 
 class TaskHandler(BaseHandler):
     def dispatch(self):
@@ -71,7 +79,8 @@ class TaskHandler(BaseHandler):
             self.abort(401)
         self.user = user
         logging.info('Request authorized by %r', user)
-        BaseHandler.dispatch(self)
+        super(TaskHandler, self).dispatch()
+
 
 def create_app(handlers, debug=True, *args, **kwargs):
     return webapp2.WSGIApplication(handlers, debug=debug, *args, **kwargs)
