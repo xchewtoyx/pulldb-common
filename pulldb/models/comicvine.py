@@ -39,6 +39,8 @@ class Comicvine(object):
     def _fetch_with_retry(self, url, retries=3, *args, **kwargs):
         for i in range(retries):
             try:
+                logging.info('Fetching comicvine resource %r (%d/%d)',
+                             url, i, retries)
                 response = urlfetch.fetch(url, *args, **kwargs)
                 self.count += 1
             except urlfetch_errors.DeadlineExceededError as e:
