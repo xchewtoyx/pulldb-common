@@ -19,8 +19,8 @@ class Comicvine(object):
         self.api_base = 'https://www.comicvine.com/api'
         self.api_key = Setting.query(
             Setting.name == 'comicvine_api_key').get().value
-        self.types = self._fetch_types()
         self.count = 0
+        self.types = self._fetch_types()
 
     def __getattr__(self, attribute):
         if attribute.startswith('fetch_'):
