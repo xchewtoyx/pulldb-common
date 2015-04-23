@@ -3,7 +3,7 @@ import json
 import logging
 from math import ceil
 from random import random
-from time import sleep
+from time import time, sleep
 from urllib import urlencode
 
 from google.appengine.api import memcache
@@ -41,11 +41,18 @@ class Comicvine(object):
             try:
                 logging.info('Fetching comicvine resource %r (%d/%d)',
                              url, i, retries)
+                start = time()
                 response = urlfetch.fetch(url, *args, **kwargs)
                 self.count += 1
             except urlfetch_errors.DeadlineExceededError as e:
+                logging.info('cvstats: status=598 url=%s retry=%d', url, i)
                 logging.exception(e)
             else:
+                latency = time() - start
+                logging.info(
+                    'cvstats: status=%d url=%s msec=%f size=%d retry=%d',
+                    response.status_code, url, latency,
+                    len(response.content), i)
                 break
             # Exponential backoff with random delay in case of error
             sleep(2**i * 0.1 + random())
@@ -112,10 +119,9 @@ class Comicvine(object):
                 path, filter=filter_string, page=index,
                 offset=expected_offset, **kwargs)
             if response_page['offset'] != expected_offset:
-                logging.warn(
-                    'Possible API Error: page=%r, offset=%r, '
-                    'expected_offset=%r' % (
-                        index, results_page['offset'], expected_offset))
+                logging.warn('Possible API Error: '
+                             'page=%r, offset=%r, expected_offset=%r',
+                             index, response_page['offset'], expected_offset)
             response['results'].extend(response_page['results'])
         return response['results']
 
