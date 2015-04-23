@@ -19,8 +19,8 @@ class Comicvine(object):
         self.api_base = 'https://www.comicvine.com/api'
         self.api_key = Setting.query(
             Setting.name == 'comicvine_api_key').get().value
-        self.types = self._fetch_types()
         self.count = 0
+        self.types = self._fetch_types()
 
     def __getattr__(self, attribute):
         if attribute.startswith('fetch_'):
@@ -39,6 +39,8 @@ class Comicvine(object):
     def _fetch_with_retry(self, url, retries=3, *args, **kwargs):
         for i in range(retries):
             try:
+                logging.info('Fetching comicvine resource %r (%d/%d)',
+                             url, i, retries)
                 response = urlfetch.fetch(url, *args, **kwargs)
                 self.count += 1
             except urlfetch_errors.DeadlineExceededError as e:
