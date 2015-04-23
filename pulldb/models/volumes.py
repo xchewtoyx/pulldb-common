@@ -58,7 +58,10 @@ class Volume(ndb.Model):
         self.issue_count=data.get('count_of_issues', self.issue_count)
         self.site_detail_url=data.get('site_detail_url', self.site_detail_url)
         if data.get('start_year'):
-            self.start_year=int(data['start_year'])
+            try:
+                self.start_year=int(data['start_year'])
+            except ValueError as err:
+                logging.error('error converting start_year: %r', err)
         if data.get('image'):
             self.image = data['image'].get('small_url')
         if data.get('first_issue'):
