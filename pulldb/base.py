@@ -11,10 +11,40 @@ import jinja2
 import webapp2
 from webapp2 import Route # pylint: disable=W0611
 
-from pulldb import util
 from pulldb.models import comicvine
 
+class VarzContext(object):
+    '''Decorate a hander within a Varz context.
+
+    This class behaves both as a decorator and a context handler.  The
+    handler method decorated will have a context varz installed into
+    its instance.  When the handler method returns the content of the
+    varz will be logged.
+    '''
+    #pylint: disable=too-few-public-methods
+    def __init__(self, context):
+        self.context = context
+
+    def __call__(self, method, *args, **kwargs):
+        logging.debug('Entering Varz context %r', self.context)
+        def wrap(instance, *args, **kwargs):
+            with self:
+                self.varz = Varz(name=self.context)
+                instance.varz = self.varz
+                return method(instance, *args, **kwargs)
+
+        return wrap
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is None:
+            logging.info('varz: %r', self.varz)
+
+
 class Varz(object):
+    #pylint: disable=too-few-public-methods
     def __init__(self, **kwargs):
         self._start_time = time()
         self._varz = kwargs
@@ -23,8 +53,7 @@ class Varz(object):
         if attribute in self._varz:
             return self._varz[attribute]
         else:
-            raise AttributeError('Object %r has no attribute %r' % (
-                type(self, attribute)))
+            return None
 
     def __setattr__(self, attribute, value):
         if attribute.startswith('_'):
@@ -71,14 +100,10 @@ class BaseHandler(webapp2.RequestHandler):
         template_values.update(self.get_user_info())
         return template_values
 
+    @VarzContext('handler')
     def dispatch(self):
-        try:
-            self.varz.name='pulldb'
-        except AttributeError:
-            self.varz = Varz(
-                name='pulldb',
-                handler='base',
-            )
+        # pylint: disable=protected-access
+        self.varz.handler_type = 'base'
         if comicvine._API:
             baseline = comicvine._API.count
         else:
@@ -87,13 +112,15 @@ class BaseHandler(webapp2.RequestHandler):
         if comicvine._API:
             logging.info('Comicvine api call count: %d',
                          comicvine._API.count - baseline)
-        logging.info('statz: %r', self.varz)
 
 
 class OauthHandler(BaseHandler):
+    @VarzContext('handler')
     def dispatch(self):
+        self.varz.handler_type = 'oauth'
         self.scope = 'https://www.googleapis.com/auth/userinfo.email'
-        self.statz = Varz(handler = 'oauth')
+        varz = self.statz.enter('handlerz')
+        varz.handler = 'oauth'
         try:
             user = oauth.get_current_user(self.scope)
         except oauth.OAuthRequestError as error:
@@ -103,15 +130,19 @@ class OauthHandler(BaseHandler):
         self.user = user
         logging.info('Request authorized by %r', user)
         super(OauthHandler, self).dispatch()
+        self.statz.exit()
 
 
 class TaskHandler(BaseHandler):
+    @VarzContext('handler')
     def dispatch(self):
+        self.varz.handler_type = 'task'
         self.scope = 'https://www.googleapis.com/auth/userinfo.email'
-        self.statz = Varz(handler='task')
         try:
             user = oauth.get_current_user(self.scope)
         except oauth.OAuthRequestError as error:
+            logging.warn('Unable to determine user for request')
+            logging.debug(error)
             user = users.get_current_user()
             if not user and 'X-Appengine-Cron' in self.request.headers:
                 user = users.User('russell+cron@heilling.net')
