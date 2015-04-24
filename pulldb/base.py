@@ -1,6 +1,7 @@
 'Base handlers for pulldb modules'
 import logging
 import os
+from time import time()
 
 from google.appengine.api import oauth
 from google.appengine.api import users
@@ -12,6 +13,30 @@ from webapp2 import Route # pylint: disable=W0611
 
 from pulldb import util
 from pulldb.models import comicvine
+
+class Varz(object):
+    def __init__(self, **kwargs):
+        self._start_time = time()
+        self._varz = kwargs
+
+    def __getattr__(self, attribute):
+        if attribute in self._varz:
+            return self._varz[attribute]
+        else:
+            raise AttributeError('Object %r has no attribute %r' % (
+                type(self, attribute)))
+
+    def __setattr__(self, attribute, value):
+        if attribute.startswith('_'):
+            super(Varz, self).__setattr__(attribute, value)
+        else:
+            self._varz[attribute] = value
+
+    def __repr__(self):
+        self._varz['elapsed'] = time() - self._start_time
+        stats = ['%s=%s' % item for item in self._varz.items()]
+        return ' '.join(stats)
+
 
 class BaseHandler(webapp2.RequestHandler):
     def __init__(self, *args, **kwargs):
@@ -47,6 +72,10 @@ class BaseHandler(webapp2.RequestHandler):
         return template_values
 
     def dispatch(self):
+        self.varz = Varz(
+            name='pulldb',
+            handler='base',
+        )
         if comicvine._API:
             baseline = comicvine._API.count
         else:
@@ -55,11 +84,13 @@ class BaseHandler(webapp2.RequestHandler):
         if comicvine._API:
             logging.info('Comicvine api call count: %d',
                          comicvine._API.count - baseline)
+        logging.info('statz: %r', varz)
 
 
 class OauthHandler(BaseHandler):
     def dispatch(self):
         self.scope = 'https://www.googleapis.com/auth/userinfo.email'
+        self.statz.handler = 'oauth'
         try:
             user = oauth.get_current_user(self.scope)
         except oauth.OAuthRequestError as error:
@@ -74,6 +105,7 @@ class OauthHandler(BaseHandler):
 class TaskHandler(BaseHandler):
     def dispatch(self):
         self.scope = 'https://www.googleapis.com/auth/userinfo.email'
+        self.statz.handler = 'task'
         try:
             user = oauth.get_current_user(self.scope)
         except oauth.OAuthRequestError as error:
