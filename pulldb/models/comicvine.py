@@ -8,8 +8,9 @@ from time import time, sleep
 from urllib import urlencode
 
 from google.appengine.api import memcache
-from google.appengine.api import urlfetch, urlfetch_errors
-from urlfetch_errors import DeadlineExceededError, DownloadError
+from google.appengine.api import urlfetch
+from google.appengine.api.urlfetch_errors import DeadlineExceededError
+from google.appengine.api.urlfetch_errors import DownloadError
 
 from pulldb.models.admin import Setting
 from pulldb.varz import VarzContext
