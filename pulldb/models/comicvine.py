@@ -1,3 +1,4 @@
+#pylint: disable=missing-docstring
 from functools import partial
 import json
 import logging
@@ -8,13 +9,14 @@ from urllib import urlencode
 
 from google.appengine.api import memcache
 from google.appengine.api import urlfetch, urlfetch_errors
-from google.appengine.ext import ndb
 
+from pulldb.base import VarzContext
 from pulldb.models.admin import Setting
 
 _API = None
 
 class Comicvine(object):
+    #pylint: disable=too-few-public-methods
     def __init__(self):
         self.api_base = 'https://www.comicvine.com/api'
         self.api_key = Setting.query(
@@ -36,19 +38,23 @@ class Comicvine(object):
             resource = tokens[1]
             return partial(self._search_resource, resource)
 
+    @VarzContext('cvstats')
     def _fetch_with_retry(self, url, retries=3, *args, **kwargs):
+        self.varz.url = url
         for i in range(retries):
             try:
+                self.varz.retries = i
                 logging.info('Fetching comicvine resource %r (%d/%d)',
                              url, i, retries)
                 start = time()
                 response = urlfetch.fetch(url, *args, **kwargs)
                 self.count += 1
-            except urlfetch_errors.DeadlineExceededError as e:
+            except urlfetch_errors.DeadlineExceededError as err:
                 logging.info('cvstats: status=598 url=%s retry=%d', url, i)
-                logging.exception(e)
+                logging.exception(err)
             else:
                 latency = time() - start
+                self.varz.latency = latency
                 logging.info(
                     'cvstats: status=%d url=%s msec=%f size=%d retry=%d',
                     response.status_code, url, latency,
@@ -71,8 +77,8 @@ class Comicvine(object):
         response = self._fetch_with_retry(resource_url, deadline=deadline)
         try:
             reply = json.loads(response.content)
-        except ValueError as e:
-            logging.exception(e)
+        except ValueError as err:
+            logging.exception(err)
         else:
             if reply['error'] == 'OK':
                 logging.debug('Success: %r', reply)
@@ -126,6 +132,7 @@ class Comicvine(object):
         return response['results']
 
     def _response_pages(self, response):
+        #pylint: disable=no-self-use
         total_results = response['number_of_total_results']
         limit = response['limit']
         pages = int(ceil(1.0*total_results/limit))
