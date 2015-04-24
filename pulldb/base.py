@@ -1,7 +1,7 @@
 'Base handlers for pulldb modules'
 import logging
 import os
-from time import time()
+from time import time
 
 from google.appengine.api import oauth
 from google.appengine.api import users
