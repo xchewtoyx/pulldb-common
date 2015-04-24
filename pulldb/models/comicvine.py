@@ -40,7 +40,7 @@ class Comicvine(object):
 
     @VarzContext('cvstats')
     def _fetch_with_retry(self, url, retries=3, *args, **kwargs):
-        self.varz.url = url
+        self.varz.url = url.replace(self.api_key, 'XXXX')
         for i in range(retries):
             try:
                 self.varz.retries = i
