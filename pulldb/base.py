@@ -72,10 +72,13 @@ class BaseHandler(webapp2.RequestHandler):
         return template_values
 
     def dispatch(self):
-        self.varz = Varz(
-            name='pulldb',
-            handler='base',
-        )
+        try:
+            self.varz.name='pulldb'
+        except AttributeError:
+            self.varz = Varz(
+                name='pulldb',
+                handler='base',
+            )
         if comicvine._API:
             baseline = comicvine._API.count
         else:
@@ -90,7 +93,7 @@ class BaseHandler(webapp2.RequestHandler):
 class OauthHandler(BaseHandler):
     def dispatch(self):
         self.scope = 'https://www.googleapis.com/auth/userinfo.email'
-        self.statz.handler = 'oauth'
+        self.statz = Varz(handler = 'oauth')
         try:
             user = oauth.get_current_user(self.scope)
         except oauth.OAuthRequestError as error:
@@ -105,7 +108,7 @@ class OauthHandler(BaseHandler):
 class TaskHandler(BaseHandler):
     def dispatch(self):
         self.scope = 'https://www.googleapis.com/auth/userinfo.email'
-        self.statz.handler = 'task'
+        self.statz = Varz(handler='task')
         try:
             user = oauth.get_current_user(self.scope)
         except oauth.OAuthRequestError as error:
