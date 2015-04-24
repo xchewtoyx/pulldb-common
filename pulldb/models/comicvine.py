@@ -50,15 +50,11 @@ class Comicvine(object):
                 response = urlfetch.fetch(url, *args, **kwargs)
                 self.count += 1
             except urlfetch_errors.DeadlineExceededError as err:
-                logging.info('cvstats: status=598 url=%s retry=%d', url, i)
                 logging.exception(err)
             else:
-                latency = time() - start
-                self.varz.latency = latency
-                logging.info(
-                    'cvstats: status=%d url=%s msec=%f size=%d retry=%d',
-                    response.status_code, url, latency,
-                    len(response.content), i)
+                self.varz.latency = time() - start
+                self.varz.size = len(response.content)
+                self.varz.status = response.status_code
                 break
             # Exponential backoff with random delay in case of error
             sleep(2**i * 0.1 + random())
