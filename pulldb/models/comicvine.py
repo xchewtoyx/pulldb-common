@@ -9,6 +9,7 @@ from urllib import urlencode
 
 from google.appengine.api import memcache
 from google.appengine.api import urlfetch, urlfetch_errors
+from urlfetch_errors import DeadlineExceededError, DownloadError
 
 from pulldb.models.admin import Setting
 from pulldb.varz import VarzContext
@@ -49,7 +50,8 @@ class Comicvine(object):
                 start = time()
                 response = urlfetch.fetch(url, *args, **kwargs)
                 self.count += 1
-            except urlfetch_errors.DeadlineExceededError as err:
+            except (DeadlineExceededError, DownloadError) as err:
+                self.varz.status = 500
                 logging.exception(err)
             else:
                 self.varz.latency = time() - start

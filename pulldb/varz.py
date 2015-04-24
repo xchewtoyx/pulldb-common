@@ -29,8 +29,9 @@ class VarzContext(object):
         pass
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type is None:
-            logging.info('varz: %r', self.varz)
+        if self.exc_type:
+            self.varz.status=500
+        logging.info('varz: %r', self.varz)
 
 
 class Varz(object):
