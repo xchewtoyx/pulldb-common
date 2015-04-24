@@ -10,8 +10,8 @@ from urllib import urlencode
 from google.appengine.api import memcache
 from google.appengine.api import urlfetch, urlfetch_errors
 
-from pulldb.base import VarzContext
 from pulldb.models.admin import Setting
+from pulldb.varz import VarzContext
 
 _API = None
 
