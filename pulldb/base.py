@@ -119,8 +119,6 @@ class OauthHandler(BaseHandler):
     def dispatch(self):
         self.varz.handler_type = 'oauth'
         self.scope = 'https://www.googleapis.com/auth/userinfo.email'
-        varz = self.statz.enter('handlerz')
-        varz.handler = 'oauth'
         try:
             user = oauth.get_current_user(self.scope)
         except oauth.OAuthRequestError as error:
@@ -130,7 +128,6 @@ class OauthHandler(BaseHandler):
         self.user = user
         logging.info('Request authorized by %r', user)
         super(OauthHandler, self).dispatch()
-        self.statz.exit()
 
 
 class TaskHandler(BaseHandler):
