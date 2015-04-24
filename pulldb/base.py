@@ -87,7 +87,7 @@ class BaseHandler(webapp2.RequestHandler):
         if comicvine._API:
             logging.info('Comicvine api call count: %d',
                          comicvine._API.count - baseline)
-        logging.info('statz: %r', varz)
+        logging.info('statz: %r', self.varz)
 
 
 class OauthHandler(BaseHandler):
