@@ -1,4 +1,5 @@
 # Copyright 2013 Russell Heilling
+from datetime import datetime
 
 from google.appengine.ext import ndb
 
@@ -13,6 +14,7 @@ class Stream(ndb.Model):
     issues = ndb.KeyProperty(kind='Issue', repeated=True)
     length = ndb.IntegerProperty()
     publishers = ndb.KeyProperty(kind='Publisher', repeated=True)
+    start = ndb.DateProperty()
     user = ndb.KeyProperty(kind='User')
     volumes = ndb.KeyProperty(kind='Volume', repeated=True)
 
