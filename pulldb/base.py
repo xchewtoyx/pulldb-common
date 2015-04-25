@@ -76,7 +76,7 @@ class TaskHandler(BaseHandler):
         try:
             user = oauth.get_current_user(self.scope)
         except oauth.OAuthRequestError as error:
-            logging.warn('Unable to determine user for request')
+            logging.info('Unable to determine user for request')
             logging.debug(error)
             user = users.get_current_user()
             if not user and 'X-Appengine-Cron' in self.request.headers:
