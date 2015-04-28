@@ -22,6 +22,7 @@ class Pull(ndb.Model):
     Holds pulled issue data.  Parent key should be a subscription.
     '''
     identifier = ndb.IntegerProperty()
+    ignored = ndb.BooleanProperty(default=False)
     issue = ndb.KeyProperty(kind='Issue')
     name = ndb.StringProperty()
     pubdate = ndb.DateProperty(default=datetime.min)
