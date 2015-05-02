@@ -26,19 +26,27 @@ class Comicvine(object):
         self.count = 0
         self.types = self._fetch_types()
 
-    def __getattr__(self, attribute):
-        if attribute.startswith('fetch_'):
-            tokens = attribute.split('_')
-            if len(tokens) > 2 and tokens[2] == 'batch':
+    def _split_method(self, method_name):
+        method = None
+        tokens = method_name.split('_')
+        if tokens[0] == 'fetch':
+            if tokens[-1] == 'batch':
                 method = self._fetch_batch
+                tokens.pop()
             else:
                 method = self._fetch_single
-            resource = tokens[1]
+        if tokens[0] == 'search':
+            method = self._search_resource
+        resource = '_'.join(tokens[1:])
+        return method, resource
+
+    def __getattr__(self, attribute):
+        method, resource = self._split_method(attribute)
+        if method and resource in self.types:
             return partial(method, resource)
-        if attribute.startswith('search_'):
-            tokens = attribute.split('_')
-            resource = tokens[1]
-            return partial(self._search_resource, resource)
+        else:
+            raise AttributeError('%r object has no attribute %r' % (
+                type(self), attribute))
 
     @VarzContext('cvstats')
     def _fetch_with_retry(self, url, retries=3, *args, **kwargs):
