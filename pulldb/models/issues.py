@@ -1,15 +1,16 @@
 # Copyright 2013 Russell Heilling
+# pylint: disable=missing-docstring
 from datetime import datetime, date
 from dateutil.parser import parse as parse_date
 import logging
 import re
 
-from google.appengine.api import search
-from google.appengine.ext import ndb
-import httplib
+from google.appengine.api import search # pylint: disable=import-error
+from google.appengine.ext import ndb # pylint: disable=import-error
 
 # pylint: disable=F0401
 from pulldb.models import base
+from pulldb.models import arcs
 from pulldb.models.properties import ImageProperty
 
 # pylint: disable=W0232,C0103,E1101,R0201,R0903,R0902
@@ -32,6 +33,7 @@ class Issue(ndb.Model):
     title = ndb.StringProperty()
     site_detail_url = ndb.StringProperty()
     volume = ndb.KeyProperty(kind='Volume')
+    arc = ndb.KeyProperty(kind='StoryArc', repeated=True)
     # These are local properties
     file_path = ndb.StringProperty()
     shard = ndb.IntegerProperty(default=-1)
@@ -51,20 +53,25 @@ class Issue(ndb.Model):
 
     def apply_changes(self, issue_data):
         self.json = issue_data
-        self.name='%s %s' % (
+        self.name = '%s %s' % (
             issue_data['volume']['name'],
             issue_data['issue_number'],
         )
         self.title = issue_data.get('name')
         self.issue_number = issue_data.get('issue_number', '')
         self.site_detail_url = issue_data.get('site_detail_url')
+        story_arcs = issue_data.get('story_arc_credits', [])
+        for arc in story_arcs:
+            arc_key = arcs.arc_key(arc, create=True)
+            if arc_key not in self.arc:
+                self.arc.append(arc_key)
         pubdate = None
         if issue_data.get('store_date'):
             pubdate = parse_date(issue_data['store_date'])
         elif issue_data.get('cover_date'):
             pubdate = parse_date(issue_data['cover_date'])
         if isinstance(pubdate, date):
-            self.pubdate=pubdate
+            self.pubdate = pubdate
         try:
             self.image = issue_data['image']['small_url']
         except (KeyError, TypeError):
@@ -196,7 +203,7 @@ def check_legacy(key, volume_key):
                 shard=legacy.shard,
             )
             if legacy.pubdate:
-                issue.pubdate=legacy.pubdate
+                issue.pubdate = legacy.pubdate
             if legacy.json:
                 issue.apply_changes(legacy.json)
             issue.put()
@@ -220,7 +227,7 @@ def issue_key(issue_data, volume_key=None, create=True, batch=False):
         if create and not issue:
             volume_key = ndb.Key('Volume', str(issue_data['volume']['id']))
             issue = Issue(
-                key = key,
+                key=key,
                 identifier=issue_data['id'],
                 last_updated=datetime.min,
                 volume=volume_key,
@@ -240,8 +247,8 @@ def issue_key(issue_data, volume_key=None, create=True, batch=False):
 
 @ndb.tasklet
 def issue_context(issue):
-  volume = yield issue.key.parent().get_async()
-  raise ndb.Return({
-    'issue': issue,
-    'volume': volume,
-  })
+    volume = yield issue.key.parent().get_async()
+    raise ndb.Return({
+        'issue': issue,
+        'volume': volume,
+    })
