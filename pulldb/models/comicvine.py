@@ -23,10 +23,13 @@ class AsyncFuture(tasklets.Future):
     def __init__(self, future):
         super(AsyncFuture, self).__init__()
         self.future = future
-        self.future.add_callback(self.set_result)
+        self.future.add_callback(self._result_available)
+
+    def _result_available(self):
+        self.set_result(self.future.get_result())
 
     def get_result(self):
-        content = self.future.get_result()
+        content = super(AsyncFuture, self).get_result()
         reply = json.loads(content)
         return reply.get('results', [])
 
