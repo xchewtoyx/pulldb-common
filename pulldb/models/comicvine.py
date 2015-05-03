@@ -48,6 +48,12 @@ class Comicvine(object):
             raise AttributeError('%r object has no attribute %r' % (
                 type(self), attribute))
 
+    @ndb.tasklet
+    def _fetch_async(self, url, **kwargs):
+        context = ndb.get_context()
+        response = yield context.urlfetch(url, **kwargs)
+        raise ndb.Return(response)
+
     @VarzContext('cvstats')
     def _fetch_with_retry(self, url, retries=3, async=False, **kwargs):
         self.varz.url = url.replace(self.api_key, 'XXXX')
@@ -58,8 +64,7 @@ class Comicvine(object):
                              url, i, retries)
                 start = time()
                 if async:
-                    context = ndb.get_context()
-                    response = yield context.urlfetch(url, **kwargs)
+                    response = self._fetch_async(url, **kwargs)
                 else:
                     response = urlfetch.fetch(url, **kwargs)
                 self.count += 1
