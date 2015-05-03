@@ -190,14 +190,6 @@ class Issue(ndb.Model):
                           last_update, self.last_updated)
             updates = True
 
-        if set(new_data.keys()) - set(issue_data.keys()):
-            # keys differ between stored and fetched
-            logging.debug('Issue data differes from stored: '
-                          '%r(old) - %r(new) = %r',
-                          issue_data.keys(), new_data.keys(),
-                          set(issue_data.keys()) - set(new_data.keys()))
-            updates = True
-
         if check_collection_changes(self, new_data):
             updates = True
 

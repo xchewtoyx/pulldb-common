@@ -153,13 +153,16 @@ def arc_key(arc_data, create=True, reindex=False, batch=False):
             api = comicvine.load()
             arc_data = api.fetch_story_arc(arc_data['id'])
         logging.info('Creating arc: %r', arc_data)
-        publisher_key = publishers.publisher_key(arc_data['publisher'])
         arc = StoryArc(
             key=key,
             identifier=arc_data['id'],
-            publisher=publisher_key,
             last_updated=datetime.min,
         )
+        try:
+            publisher_key = publishers.publisher_key(arc_data['publisher'])
+            arc.publisher = publisher_key
+        except:
+            logging.warn('Arc has no publisher: %r', arc_data)
 
     if arc and isinstance(arc_data, dict):
         if arc.has_updates(arc_data):

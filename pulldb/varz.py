@@ -33,6 +33,12 @@ class VarzContext(object):
             self.varz.status=500
         logging.info('varz: %r', self.varz)
 
+    def start(self):
+        self.varz = Varz(name=self.context)
+
+    def stop(self):
+        return self.__exit__(None, None, None)
+
 
 class Varz(object):
     #pylint: disable=too-few-public-methods

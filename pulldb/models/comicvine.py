@@ -23,14 +23,23 @@ class AsyncFuture(tasklets.Future):
     def __init__(self, future):
         super(AsyncFuture, self).__init__()
         self.future = future
+        self.varz_context = VarzContext('cvstats')
+        self.varz_context.start()
+        self.varz = self.varz_context.varz
         self.future.add_callback(self._result_available)
 
     def _result_available(self):
-        self.set_result(self.future.get_result())
+        result = self.future.get_result()
+        logging.debug('Async fetch complete[%s]: %r',
+                      result.status_code, result.content)
+        self.set_result(result)
 
     def get_result(self):
-        content = super(AsyncFuture, self).get_result()
-        reply = json.loads(content)
+        response = super(AsyncFuture, self).get_result()
+        self.varz.status = response.status_code
+        self.varz.size = len(response.content)
+        reply = json.loads(response.content)
+        self.varz_context.stop()
         return reply.get('results', [])
 
 
@@ -72,7 +81,6 @@ class Comicvine(object):
     def _fetch_async(self, url, **kwargs):
         context = ndb.get_context()
         response = yield context.urlfetch(url, **kwargs)
-        logging.debug('_fetch_async got %r', response)
         raise ndb.Return(response)
 
     @VarzContext('cvstats')
@@ -143,8 +151,9 @@ class Comicvine(object):
         resource_path = self.types[resource]['detail_resource_name']
         resource_type = self.types[resource]['id']
         path = '%s/%s-%d' % (resource_path, resource_type, identifier)
-        response = self._fetch_url(path, async=True, **kwargs)
-        return AsyncFuture(response)
+        response = AsyncFuture(self._fetch_url(path, async=True, **kwargs))
+        response.varz.url = path
+        return response
 
     def _fetch_single(self, resource, identifier, **kwargs):
         resource_path = self.types[resource]['detail_resource_name']
