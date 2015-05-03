@@ -18,6 +18,19 @@ from pulldb.varz import VarzContext
 
 _API = None
 
+class AsyncFuture(object):
+    def __init__(self, future):
+        self.future = future
+
+    def __getattr__(self, attribute):
+        return getattr(self.future, attribute)
+
+    def get_result(self):
+        content = self.future.get_result()
+        reply = json.loads(content)
+        return reply.get('results', [])
+
+
 class Comicvine(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
@@ -33,6 +46,9 @@ class Comicvine(object):
         if tokens[0] == 'fetch':
             if tokens[-1] == 'batch':
                 method = self._fetch_batch
+                tokens.pop()
+            elif tokens[-1] == 'async':
+                method = self._fetch_single_async
                 tokens.pop()
             else:
                 method = self._fetch_single
@@ -53,10 +69,11 @@ class Comicvine(object):
     def _fetch_async(self, url, **kwargs):
         context = ndb.get_context()
         response = yield context.urlfetch(url, **kwargs)
+        logging.debug('_fetch_async got %r', response)
         raise ndb.Return(response)
 
     @VarzContext('cvstats')
-    def _fetch_with_retry(self, url, retries=3, async=False, **kwargs):
+    def _fetch_with_retry(self, url, retries=3, **kwargs):
         self.varz.url = url.replace(self.api_key, 'XXXX')
         for i in range(retries):
             try:
@@ -64,10 +81,7 @@ class Comicvine(object):
                 logging.info('Fetching comicvine resource %r (%d/%d)',
                              url, i, retries)
                 start = time()
-                if async:
-                    response = self._fetch_async(url, **kwargs)
-                else:
-                    response = urlfetch.fetch(url, **kwargs)
+                response = urlfetch.fetch(url, **kwargs)
                 self.count += 1
             except (DeadlineExceededError, DownloadError) as err:
                 self.varz.status = 500
@@ -81,7 +95,7 @@ class Comicvine(object):
             sleep(2**i * 0.1 + random())
         return response
 
-    def _fetch_url(self, path, deadline=5, **kwargs):
+    def _fetch_url(self, path, deadline=5, async=False, **kwargs):
         query = {
             'api_key': self.api_key,
             'format': 'json',
@@ -91,6 +105,8 @@ class Comicvine(object):
         resource_url = '%s/%s?%s' % (
             self.api_base, path, query_string)
         logging.debug('Fetching comicvine resource: %s', resource_url)
+        if async:
+            return self._fetch_async(resource_url, deadline=deadline)
         response = self._fetch_with_retry(resource_url, deadline=deadline)
         try:
             reply = json.loads(response.content)
@@ -119,6 +135,13 @@ class Comicvine(object):
                 memcache.set('types', json.dumps(types), 604800,
                              namespace='comicvine')
         return types
+
+    def _fetch_single_async(self, resource, identifier, **kwargs):
+        resource_path = self.types[resource]['detail_resource_name']
+        resource_type = self.types[resource]['id']
+        path = '%s/%s-%d' % (resource_path, resource_type, identifier)
+        response = self._fetch_url(path, async=True, **kwargs)
+        return AsyncFuture(response)
 
     def _fetch_single(self, resource, identifier, **kwargs):
         resource_path = self.types[resource]['detail_resource_name']
