@@ -5,43 +5,52 @@ from dateutil.parser import parse as parse_date
 import logging
 import re
 
-from google.appengine.api import search # pylint: disable=import-error
-from google.appengine.ext import ndb # pylint: disable=import-error
+from google.appengine.api import search
+from google.appengine.ext import ndb
+from google.appengine.ext.ndb.model import BlobProperty
+from google.appengine.ext.ndb.model import BooleanProperty
+from google.appengine.ext.ndb.model import DateProperty
+from google.appengine.ext.ndb.model import DateTimeProperty
+from google.appengine.ext.ndb.model import IntegerProperty
+from google.appengine.ext.ndb.model import JsonProperty
+from google.appengine.ext.ndb.model import KeyProperty
+from google.appengine.ext.ndb.model import StringProperty
 
-# pylint: disable=F0401
 from pulldb.models import base
 from pulldb.models import arcs
+from pulldb.models import volumes
 from pulldb.models.properties import ImageProperty
-
-# pylint: disable=W0232,C0103,E1101,R0201,R0903,R0902
 
 class NoSuchIssue(base.PullDBModelException):
     pass
+
 
 class Issue(ndb.Model):
     '''Issue object in datastore.
 
     Holds issue data.  Parent key should be a volume.
     '''
+    # pylint: disable=too-many-instance-attributes
     # These are properties of the comicvine issue
-    identifier = ndb.IntegerProperty()
-    cover = ndb.BlobProperty()
+    identifier = IntegerProperty()
+    cover = BlobProperty()
     image = ImageProperty()
-    issue_number = ndb.StringProperty()
-    last_updated = ndb.DateTimeProperty(default=datetime.min)
-    pubdate = ndb.DateProperty()
-    title = ndb.StringProperty()
-    site_detail_url = ndb.StringProperty()
-    volume = ndb.KeyProperty(kind='Volume')
-    arc = ndb.KeyProperty(kind='StoryArc', repeated=True)
+    issue_number = StringProperty()
+    last_updated = DateTimeProperty(default=datetime.min)
+    pubdate = DateProperty()
+    title = StringProperty()
+    site_detail_url = StringProperty()
+    volume = KeyProperty(kind='Volume')
+    # collection holds all volumes and arcs for the issue
+    collection = KeyProperty(repeated=True)
     # These are local properties
-    file_path = ndb.StringProperty()
-    shard = ndb.IntegerProperty(default=-1)
-    json = ndb.JsonProperty(indexed=False)
-    name = ndb.StringProperty()
-    changed = ndb.DateTimeProperty(auto_now=True)
-    complete = ndb.BooleanProperty(default=False)
-    indexed = ndb.BooleanProperty(default=False)
+    file_path = StringProperty()
+    shard = IntegerProperty(default=-1)
+    json = JsonProperty(indexed=False)
+    name = StringProperty()
+    changed = DateTimeProperty(auto_now=True)
+    complete = BooleanProperty(default=False)
+    indexed = BooleanProperty(default=False)
 
     @classmethod
     def projection(cls):
@@ -60,11 +69,14 @@ class Issue(ndb.Model):
         self.title = issue_data.get('name')
         self.issue_number = issue_data.get('issue_number', '')
         self.site_detail_url = issue_data.get('site_detail_url')
+        volume_key = volumes.volume_key(issue_data['volume'], create=False)
+        if volume_key not in self.collection:
+            self.collection.append(volume_key)
         story_arcs = issue_data.get('story_arc_credits', [])
         for arc in story_arcs:
             arc_key = arcs.arc_key(arc, create=True)
-            if arc_key not in self.arc:
-                self.arc.append(arc_key)
+            if arc_key not in self.collection:
+                self.collection.append(arc_key)
         pubdate = None
         if issue_data.get('store_date'):
             pubdate = parse_date(issue_data['store_date'])
@@ -186,7 +198,20 @@ class Issue(ndb.Model):
                           set(issue_data.keys()) - set(new_data.keys()))
             updates = True
 
+        if check_collection_changes(self, new_data):
+            updates = True
+
         return updates, last_update
+
+def check_collection_changes(issue, issue_data):
+    changed = False
+    if issue.volume not in issue.collection:
+        changed = True
+    for story_arc in issue_data.get('story_arc_credits', []):
+        arc_key = arcs.arc_key(story_arc, create=True)
+        if arc_key not in issue.collection:
+            changed = True
+    return changed
 
 # TODO(rgh): Temporary lookup of old style pull key during transition
 def check_legacy(key, volume_key):
@@ -238,7 +263,9 @@ def issue_key(issue_data, volume_key=None, create=True, batch=False):
             updated = True
 
         if updated:
-            logging.info('Saving issue updates for %s', key.id())
+            logging.info(
+                'Saving issue updates for %s (last update at: %s)',
+                key.id(), last_update)
             if batch:
                 return issue.put_async()
             issue.put()

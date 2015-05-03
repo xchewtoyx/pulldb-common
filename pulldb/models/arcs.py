@@ -93,7 +93,7 @@ class StoryArc(ndb.Model):
     def index_document(self, batch=False):
         document_fields = [
             search.TextField(name='name', value=self.name),
-            search.NumberField(name='volume_id', value=self.identifier),
+            search.NumberField(name='arc_id', value=self.identifier),
         ]
         if self.json:
             aliases = self.json.get('aliases')
