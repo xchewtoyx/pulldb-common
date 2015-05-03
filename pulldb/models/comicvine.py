@@ -12,14 +12,14 @@ from google.appengine.api import urlfetch
 from google.appengine.api.urlfetch_errors import DeadlineExceededError
 from google.appengine.api.urlfetch_errors import DownloadError
 from google.appengine.ext import ndb
-from google.appengine.ext.ndb import tasklet
+from google.appengine.ext.ndb import tasklets
 
 from pulldb.models.admin import Setting
 from pulldb.varz import VarzContext
 
 _API = None
 
-class AsyncFuture(tasklet.Future):
+class AsyncFuture(tasklets.Future):
     def __init__(self, future):
         super(AsyncFuture, self).__init__()
         self.future = future
