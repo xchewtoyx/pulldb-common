@@ -49,7 +49,7 @@ class Comicvine(object):
                 type(self), attribute))
 
     @VarzContext('cvstats')
-    def _fetch_with_retry(self, url, retries=3, *args, **kwargs):
+    def _fetch_with_retry(self, url, retries=3, async=False, **kwargs):
         self.varz.url = url.replace(self.api_key, 'XXXX')
         for i in range(retries):
             try:
@@ -57,7 +57,11 @@ class Comicvine(object):
                 logging.info('Fetching comicvine resource %r (%d/%d)',
                              url, i, retries)
                 start = time()
-                response = urlfetch.fetch(url, *args, **kwargs)
+                if async:
+                    context = ndb.get_context()
+                    response = yield context.urlfetch(url, **kwargs)
+                else:
+                    response = urlfetch.fetch(url, **kwargs)
                 self.count += 1
             except (DeadlineExceededError, DownloadError) as err:
                 self.varz.status = 500
