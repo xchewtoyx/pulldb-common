@@ -160,7 +160,10 @@ class Comicvine(object):
         resource_type = self.types[resource]['id']
         path = '%s/%s-%d' % (resource_path, resource_type, identifier)
         response = self._fetch_url(path, **kwargs)
-        return response['results']
+        if response:
+            return response['results']
+        else:
+            return {}
 
     def _fetch_batch(
             self, resource, identifiers, filter_attr='id', **kwargs):
