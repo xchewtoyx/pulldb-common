@@ -11,6 +11,7 @@ from google.appengine.api import memcache
 from google.appengine.api import urlfetch
 from google.appengine.api.urlfetch_errors import DeadlineExceededError
 from google.appengine.api.urlfetch_errors import DownloadError
+from google.appengine.ext import ndb
 
 from pulldb.models.admin import Setting
 from pulldb.varz import VarzContext
