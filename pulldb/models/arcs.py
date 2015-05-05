@@ -151,7 +151,9 @@ def arc_key(arc_data, create=True, reindex=False, batch=False):
     if create and not arc:
         if 'publisher' not in arc_data:
             api = comicvine.load()
-            arc_data = api.fetch_story_arc(arc_data['id'])
+            arc_detail = api.fetch_story_arc(arc_data['id'])
+            if arc_detail:
+                arc_data.update(arc_detail)
         logging.info('Creating arc: %r', arc_data)
         arc = StoryArc(
             key=key,

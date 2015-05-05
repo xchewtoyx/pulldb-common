@@ -241,7 +241,10 @@ def issue_key(issue_data, volume_key=None, create=True, batch=False):
     if isinstance(issue_data, dict):
         updated = False
         issue = key.get()
-        if create and not issue:
+
+        if issue:
+            updated, last_update = issue.has_updates(issue_data)
+        elif create:
             volume_key = ndb.Key('Volume', str(issue_data['volume']['id']))
             issue = Issue(
                 key=key,
@@ -249,12 +252,10 @@ def issue_key(issue_data, volume_key=None, create=True, batch=False):
                 last_updated=datetime.min,
                 volume=volume_key,
             )
-        updated, last_update = issue.has_updates(issue_data)
-        if updated:
-            issue.apply_changes(issue_data)
             updated = True
 
         if updated:
+            issue.apply_changes(issue_data)
             logging.info(
                 'Saving issue updates for %s (last update at: %s)',
                 key.id(), last_update)

@@ -27,9 +27,11 @@ class AsyncFuture(tasklets.Future):
         self.varz_context.start()
         self.varz = self.varz_context.varz
         self.future.add_callback(self._result_available)
+        self.start = time()
 
     def _result_available(self):
         result = self.future.get_result()
+        self.varz.latency = time() - self.start
         logging.debug('Async fetch complete[%s]: %r',
                       result.status_code, result.content)
         self.set_result(result)
