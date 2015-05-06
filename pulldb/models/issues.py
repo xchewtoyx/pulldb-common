@@ -61,11 +61,19 @@ class Issue(ndb.Model):
         ]
 
     def apply_changes(self, issue_data):
-        self.json = issue_data
-        self.name = '%s %s' % (
-            issue_data['volume']['name'],
-            issue_data['issue_number'],
-        )
+        merged_data = self.json
+        merged_data.update(issue_data)
+        issue_data = merged_data
+        self.json = merged_data
+        try:
+            self.name = '%s %s' % (
+                issue_data['volume']['name'],
+                issue_data['issue_number'],
+            )
+        except KeyError as err:
+            logging.warn("Cannot determine issue name for %r.  Saw %r",
+                         self.key, err)
+            self.name = issue_data.get('name')
         self.title = issue_data.get('name')
         self.issue_number = issue_data.get('issue_number', '')
         self.site_detail_url = issue_data.get('site_detail_url')
