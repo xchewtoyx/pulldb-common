@@ -123,8 +123,7 @@ def watch_key(collection_data, user=None, create=False, batch=False):
             raise NoSuchCollection(message)
         watch = WatchList(
             user=user,
-            collecti
-            on=collection_key)
+            collection=collection_key)
         if batch:
             return watch.put_async()
         watch.put()
