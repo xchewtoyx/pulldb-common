@@ -13,6 +13,7 @@ def model_to_dict(model, json=False):
         return {}
     model_dict = {
         'key': model.key.urlsafe(),
+        'kind': model.key.kind(),
         'id': model.key.id(),
     }
     if hasattr(model, 'projection'):
@@ -29,6 +30,7 @@ def model_to_dict(model, json=False):
         if isinstance(value, ndb.Key):
             model_dict[key] = value.urlsafe()
             model_dict['%s_id' % key] = value.id()
+            model_dict['%s_kind' % key] = value.kind()
         elif isinstance(value, datetime.date):
             model_dict[key] = value.isoformat()
         else:
