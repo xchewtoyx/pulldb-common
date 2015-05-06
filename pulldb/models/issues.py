@@ -61,10 +61,11 @@ class Issue(ndb.Model):
         ]
 
     def apply_changes(self, issue_data):
-        merged_data = self.json
-        merged_data.update(issue_data)
-        issue_data = merged_data
-        self.json = merged_data
+        if self.json:
+            merged_data = self.json
+            merged_data.update(issue_data)
+            self.json = merged_data
+            issue_data = merged_data
         try:
             self.name = '%s %s' % (
                 issue_data['volume']['name'],
