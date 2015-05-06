@@ -38,9 +38,13 @@ class AsyncFuture(tasklets.Future):
 
     def get_result(self):
         response = super(AsyncFuture, self).get_result()
-        self.varz.status = response.status_code
+        self.varz.http_status = response.status_code
         self.varz.size = len(response.content)
-        reply = json.loads(response.content)
+        try:
+            reply = json.loads(response.content)
+            self.varz.status = reply.get('status_code', 0)
+        except ValueError:
+            self.varz.status = 500
         self.varz_context.stop()
         return reply.get('results', [])
 
@@ -80,7 +84,7 @@ class Comicvine(object):
                 type(self), attribute))
 
     @ndb.tasklet
-    def _fetch_async(self, url, **kwargs):
+    def _fetch_async(self, url, **kwargs): # pylint: disable=no-self-use
         context = ndb.get_context()
         response = yield context.urlfetch(url, **kwargs)
         raise ndb.Return(response)
@@ -102,7 +106,12 @@ class Comicvine(object):
             else:
                 self.varz.latency = time() - start
                 self.varz.size = len(response.content)
-                self.varz.status = response.status_code
+                self.varz.http_status = response.status_code
+                try:
+                    result = json.loads(response.content)
+                    self.varz.status = result.get('status_code', 0)
+                except ValueError:
+                    self.varz.status = 500
                 break
             # Exponential backoff with random delay in case of error
             sleep(2**i * 0.1 + random())
