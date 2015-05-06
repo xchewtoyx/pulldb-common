@@ -58,7 +58,7 @@ def pull_key(data, user=None, create=True, batch=False):
         if not issue:
             raise NoSuchIssue('Cannot add pull for bad issue: %r' % pull_id)
         subscription_key = subscriptions.subscription_key(
-            issue.volume, user=user)
+            issue.volume, user=user, create=False)
 
         pull = key.get()
         changed = False
@@ -69,12 +69,13 @@ def pull_key(data, user=None, create=True, batch=False):
                 issue=issue_key,
                 name=issue.name,
                 pubdate=issue.pubdate,
-                subscription=subscription_key,
                 volume=issue.volume,
             )
             volume = issue.volume.get()
             if volume:
                 pull.publisher = volume.publisher
+            if subscription_key.get():
+                pull.subscription = subscription_key
             changed = True
 
         if pull.pubdate != issue.pubdate:
