@@ -254,6 +254,8 @@ def issue_key(issue_data, volume_key=None, create=True, batch=False):
             )
             updated = True
             last_update = datetime.min
+        else:
+            return False
 
         if updated:
             issue.apply_changes(issue_data)
