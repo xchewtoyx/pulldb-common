@@ -97,25 +97,25 @@ def volume_watch_key(volume_data, **kwargs):
         volume_key = volume_data.key
     return watch_key(volume_key, **kwargs)
 
-@ndb.tasklet
 def watch_key(collection_data, user=None, create=False, batch=False):
     if isinstance(collection_data, ndb.Key):
         collection_key = collection_data
     if not user:
         user = users.user_key()
+    watch = None
     watch_query = WatchList.query( # pylint: disable=no-member
         WatchList.user == user,
         WatchList.collection == collection_key)
-    watches = yield watch_query.fetch_async()
+    watches = watch_query.fetch()
     if len(watches) > 1:
-        logging.error(
+        logging.warn(
             'Too many watches for %r [%r]', collection_data, watches)
     if watches:
         watch = watches[0]
     if not watch and create:
         # Pylint doesn't know about model methods
         # pylint: disable=no-member
-        collection = yield collection_key.get_async()
+        collection = collection_key.get()
         if not collection:
             message = 'Cannot add subscription for invalid collection: %r' % (
                 collection_key,)
@@ -123,12 +123,13 @@ def watch_key(collection_data, user=None, create=False, batch=False):
             raise NoSuchCollection(message)
         watch = WatchList(
             user=user,
-            collection=collection_key)
+            collecti
+            on=collection_key)
         if batch:
-            raise ndb.Return(watch.put_async())
-        yield watch.put_async()
+            return watch.put_async()
+        watch.put()
 
-    raise ndb.Return(watch.key) # pylint: disable=no-member
+    return watch.key
 
 def subscription_key(volume_data, user=None, create=False, batch=False):
     if isinstance(volume_data, int):
