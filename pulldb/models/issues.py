@@ -74,7 +74,7 @@ class Issue(ndb.Model):
         except KeyError as err:
             logging.warn("Cannot determine issue name for %r.  Saw %r",
                          self.key, err)
-            self.name = issue_data.get('name')
+            return
         self.title = issue_data.get('name')
         self.issue_number = issue_data.get('issue_number', '')
         self.site_detail_url = issue_data.get('site_detail_url')
@@ -264,7 +264,7 @@ def issue_key(issue_data, volume_key=None, create=True, batch=False):
             updated = True
             last_update = datetime.min
         else:
-            return False
+            return None
 
         if updated:
             issue.apply_changes(issue_data)
