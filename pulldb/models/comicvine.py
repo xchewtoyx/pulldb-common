@@ -49,6 +49,42 @@ class AsyncFuture(tasklets.Future):
         return reply.get('results', [])
 
 
+class BatchFuture(tasklets.MultiFuture):
+    #pylint: disable=too-many-instance-attributes
+    def __init__(self, method, path, filter=None, **kwargs):
+        super(BatchFuture, self).__init__()
+        self.method = method
+        self.path = path
+        self.filter_string = filter
+        self.kwargs = kwargs
+        self.done = False
+        self.fetch_first()
+
+    def _page_available(self, future):
+        result = future.get_result()
+        self.putq(result)
+        self.fetch_remaining(json.loads(result.content))
+
+    def fetch_first(self):
+        first = self.fetch_page()
+        first.add_callback(self._page_available, first)
+
+    def fetch_remaining(self, first_page):
+        pages = response_pages(first_page)
+        for index in range(2, pages+1):
+            expected_offset = (index-1) * first_page['limit']
+            self.add_dependent(
+                self.fetch_page(page=index, offset=expected_offset))
+        self.complete()
+
+    @ndb.tasklet
+    def fetch_page(self, page=1, offset=0):
+        result = yield self.method(
+            self.path, filter=self.filter_string,
+            page=page, offset=offset, **self.kwargs)
+        raise ndb.Return(result)
+
+
 class Comicvine(object):
     #pylint: disable=too-few-public-methods
     def __init__(self):
@@ -62,16 +98,24 @@ class Comicvine(object):
         method = None
         tokens = method_name.split('_')
         if tokens[0] == 'fetch':
-            if tokens[-1] == 'batch':
-                method = self._fetch_batch
+            async = False
+            if tokens[-1] == 'async':
+                async = True
                 tokens.pop()
-            elif tokens[-1] == 'async':
-                method = self._fetch_single_async
+            if tokens[-1] == 'batch':
+                if async:
+                    method = self._fetch_batch_async
+                else:
+                    method = self._fetch_batch
                 tokens.pop()
             else:
-                method = self._fetch_single
+                if async:
+                    method = self._fetch_single_async
+                else:
+                    method = self._fetch_single
         if tokens[0] == 'search':
             method = self._search_resource
+
         resource = '_'.join(tokens[1:])
         return method, resource
 
@@ -176,6 +220,17 @@ class Comicvine(object):
         else:
             return {}
 
+    def _fetch_batch_async(
+            self, resource, identifiers, filter_attr='id', **kwargs):
+        path = self.types[resource]['list_resource_name']
+        filter_string = '%s:%s' % (
+            filter_attr,
+            '|'.join(str(id) for id in identifiers),
+        )
+        response = BatchFuture(
+            self._fetch_url, path, filter=filter_string, async=True, **kwargs)
+        return response
+
     def _fetch_batch(
             self, resource, identifiers, filter_attr='id', **kwargs):
         path = self.types[resource]['list_resource_name']
@@ -184,7 +239,7 @@ class Comicvine(object):
             '|'.join(str(id) for id in identifiers),
         )
         response = self._fetch_url(path, filter=filter_string, **kwargs)
-        pages = self._response_pages(response)
+        pages = response_pages(response)
         for index in range(2, pages+1):
             expected_offset = (index-1) * response['limit']
             response_page = self._fetch_url(
@@ -197,15 +252,6 @@ class Comicvine(object):
             response['results'].extend(response_page['results'])
         return response['results']
 
-    def _response_pages(self, response):
-        #pylint: disable=no-self-use
-        total_results = response['number_of_total_results']
-        limit = response['limit']
-        pages = int(ceil(1.0*total_results/limit))
-        logging.debug('%d results with %d per page.  Fetching %d pages',
-                      total_results, limit, pages)
-        return pages
-
     def _search_resource(self, resource, query, **kwargs):
         path = 'search'
         response = self._fetch_url(
@@ -213,6 +259,14 @@ class Comicvine(object):
         count = response['number_of_total_results']
         logging.debug('Found %d results', count)
         return int(count), response['results']
+
+def response_pages(response):
+    total_results = response['number_of_total_results']
+    limit = response['limit']
+    pages = int(ceil(1.0*total_results/limit))
+    logging.debug('%d results with %d per page.  Fetching %d pages',
+                  total_results, limit, pages)
+    return pages
 
 def load():
     if not _API:
