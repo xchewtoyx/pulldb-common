@@ -38,6 +38,7 @@ class AsyncFuture(tasklets.Future):
 
     def get_result(self):
         response = super(AsyncFuture, self).get_result()
+        self.response = response
         self.varz.http_status = response.status_code
         self.varz.size = len(response.content)
         try:
@@ -63,26 +64,23 @@ class BatchFuture(tasklets.MultiFuture):
     def _page_available(self, future):
         result = future.get_result()
         self.putq(result)
-        self.fetch_remaining(json.loads(result.content))
+        self.fetch_remaining(json.loads(future.response.content))
+
+    def _fetch_page(self, page=1, offset=0):
+        return self.method(self.path, filter=self.filter_string,
+                           page=page, offset=offset, **self.kwargs)
 
     def fetch_first(self):
-        first = self.fetch_page()
+        first = AsyncFuture(self._fetch_page())
         first.add_callback(self._page_available, first)
 
     def fetch_remaining(self, first_page):
         pages = response_pages(first_page)
         for index in range(2, pages+1):
             expected_offset = (index-1) * first_page['limit']
-            self.add_dependent(
-                self.fetch_page(page=index, offset=expected_offset))
+            page_future = self._fetch_page(page=page, offset=offset)
+            self.add_dependent(AsyncFuture(page_future))
         self.complete()
-
-    @ndb.tasklet
-    def fetch_page(self, page=1, offset=0):
-        result = yield self.method(
-            self.path, filter=self.filter_string,
-            page=page, offset=offset, **self.kwargs)
-        raise ndb.Return(result)
 
 
 class Comicvine(object):
