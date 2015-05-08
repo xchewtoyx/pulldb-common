@@ -50,6 +50,10 @@ class StoryArc(ndb.Model):
         ]
 
     def apply_changes(self, data):
+        merged_data = self.json or {}
+        merged_data.update(data)
+        data=merged_data
+
         self.json = data
         self.name = data.get('name', self.name)
         self.site_detail_url = data.get('site_detail_url', self.site_detail_url)
@@ -68,24 +72,21 @@ class StoryArc(ndb.Model):
             last_updated = parse_date(last_updated)
         else:
             last_updated = datetime.min
-        self.last_updated = last_updated
+        if last_updated > self.last_updated:
+            self.last_updated = last_updated
         self.indexed = False
 
     def has_updates(self, new_data):
-        arc_data = self.json or {}
+        merged_data = self.json or {}
+        merged_data.update(new_data)
+        new_data = merged_data
         updates = False
 
         new_data_date = new_data.get('date_last_updated')
         if new_data_date:
             last_update = parse_date(new_data_date)
-        else:
-            last_update = datetime.min
 
         if last_update > self.last_updated:
-            updates = True
-
-        if set(new_data.keys()) - set(arc_data.keys()):
-            # keys differ between stored and fetched
             updates = True
 
         return updates, last_update
