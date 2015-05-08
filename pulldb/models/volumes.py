@@ -53,6 +53,12 @@ class Volume(ndb.Model):
         ]
 
     def apply_changes(self, data):
+        # avoid overwriting data with a less complete version by merging
+        # the new data over the existing data
+        merged_data = self.json or {}
+        merged_data.update(data)
+        data = merged_data
+
         self.json=data
         self.name=data.get('name', self.name)
         self.issue_count=data.get('count_of_issues', self.issue_count)
@@ -82,7 +88,8 @@ class Volume(ndb.Model):
             last_updated = parse_date(last_updated)
         else:
             last_updated = datetime.min
-        self.last_updated = last_updated
+        if last_updated > self.last_updated:
+            self.last_updated = last_updated
         self.indexed = False
 
     def has_updates(self, new_data):
@@ -96,10 +103,6 @@ class Volume(ndb.Model):
             last_update = datetime.min
 
         if last_update > self.last_updated:
-            updates = True
-
-        if set(new_data.keys()) - set(volume_data.keys()):
-            # keys differ between stored and fetched
             updates = True
 
         return updates, last_update
