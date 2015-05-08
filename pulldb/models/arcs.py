@@ -85,6 +85,8 @@ class StoryArc(ndb.Model):
         new_data_date = new_data.get('date_last_updated')
         if new_data_date:
             last_update = parse_date(new_data_date)
+        else:
+            last_update = datetime.min
 
         if last_update > self.last_updated:
             updates = True
