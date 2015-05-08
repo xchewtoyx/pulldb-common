@@ -192,7 +192,7 @@ class Issue(ndb.Model):
         if new_data_date:
             last_update = parse_date(new_data_date)
         else:
-            last_update = datetime.now()
+            last_update = datetime.min
 
         if last_update > self.last_updated:
             logging.debug('Issue data newer than stored %r > %r',
