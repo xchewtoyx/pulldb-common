@@ -78,7 +78,7 @@ class BatchFuture(tasklets.MultiFuture):
         pages = response_pages(first_page)
         for index in range(2, pages+1):
             expected_offset = (index-1) * first_page['limit']
-            page_future = self._fetch_page(page=page, offset=offset)
+            page_future = self._fetch_page(page=index, offset=expected_offset)
             self.add_dependent(AsyncFuture(page_future))
         self.complete()
 
@@ -261,7 +261,10 @@ class Comicvine(object):
 def response_pages(response):
     total_results = response['number_of_total_results']
     limit = response['limit']
-    pages = int(ceil(1.0*total_results/limit))
+    if limit:
+        pages = int(ceil(1.0*total_results/limit))
+    else:
+        pages = 1
     logging.debug('%d results with %d per page.  Fetching %d pages',
                   total_results, limit, pages)
     return pages
