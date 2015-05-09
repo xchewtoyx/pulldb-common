@@ -179,8 +179,9 @@ class Comicvine(object):
         else:
             if reply['error'] == 'OK':
                 logging.debug('Success: %r', reply)
-                return reply
-            logging.error('Error: %r', reply)
+            else:
+                logging.error('Error: %r', reply)
+            return reply
 
     def _fetch_types(self):
         types = memcache.get('types', namespace='comicvine')
@@ -254,9 +255,14 @@ class Comicvine(object):
         path = 'search'
         response = self._fetch_url(
             path, query=query, resources=resource, **kwargs)
-        count = response['number_of_total_results']
-        logging.debug('Found %d results', count)
-        return int(count), response['results']
+        if response:
+            count = response.get('number_of_total_results', 0)
+            logging.debug('Found %d results', count)
+            return int(count), response['results']
+        else:
+            logging.error("No response to search request: %r",
+                          (resource, query, kwargs))
+            return 0, []
 
 def response_pages(response):
     total_results = response['number_of_total_results']
