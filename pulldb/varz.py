@@ -29,7 +29,7 @@ class VarzContext(object):
         pass
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type:
+        if exc_type and not self.varz.status:
             self.varz.status=500
         logging.info('varz: %r', self.varz)
 

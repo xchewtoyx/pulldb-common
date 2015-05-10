@@ -47,8 +47,8 @@ class AsyncFuture(tasklets.Future):
                       result.status_code, result.content)
         try:
             reply = json.loads(result.content)
-            if reply.status_code >= 100:
-                raise ApiError(reply.status_code, reply.error)
+            if reply['status_code'] >= 100:
+                raise ApiError(reply['status_code'], reply['error'])
         except (TypeError, ValueError) as err:
             logging.warn('No JSON found in response: %r', result)
         self.set_result(result)
@@ -171,7 +171,7 @@ class Comicvine(object):
                     status_code = result.get('status_code', 0)
                     self.varz.status = status_code
                     if status_code >= 100:
-                        raise ApiError(result.status_code, result.error)
+                        raise ApiError(result['status_code'], result['error'])
                 except (TypeError, ValueError):
                     self.varz.status = 500
                 break
@@ -241,6 +241,8 @@ class Comicvine(object):
 
     def _fetch_batch_async(
             self, resource, identifiers, filter_attr='id', **kwargs):
+        logging.info('Fetching %s resources where %r is in %r',
+                     resource, filter_attr, identifiers)
         path = self.types[resource]['list_resource_name']
         filter_string = '%s:%s' % (
             filter_attr,
