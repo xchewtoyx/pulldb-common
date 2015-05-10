@@ -19,6 +19,17 @@ from pulldb.varz import VarzContext
 
 _API = None
 
+class ApiError(Exception):
+    def __init__(self, status, message):
+        super(ApiError, self).__init__(message)
+        self.status = status
+
+    def __repr__(self):
+        return '%r(%s, %s)' % (
+            type(self), self.status, self.message
+        )
+
+
 class AsyncFuture(tasklets.Future):
     def __init__(self, future):
         super(AsyncFuture, self).__init__()
@@ -34,6 +45,12 @@ class AsyncFuture(tasklets.Future):
         self.varz.latency = time() - self.start
         logging.debug('Async fetch complete[%s]: %r',
                       result.status_code, result.content)
+        try:
+            reply = json.loads(result.content)
+            if reply.status_code >= 100:
+                raise ApiError(reply.status_code, reply.error)
+        except (TypeError, ValueError) as err:
+            logging.warn('No JSON found in response: %r', result)
         self.set_result(result)
 
     def get_result(self):
@@ -151,8 +168,11 @@ class Comicvine(object):
                 self.varz.http_status = response.status_code
                 try:
                     result = json.loads(response.content)
-                    self.varz.status = result.get('status_code', 0)
-                except ValueError:
+                    status_code = result.get('status_code', 0)
+                    self.varz.status = status_code
+                    if status_code >= 100:
+                        raise ApiError(result.status_code, result.error)
+                except (TypeError, ValueError):
                     self.varz.status = 500
                 break
             # Exponential backoff with random delay in case of error
