@@ -170,7 +170,8 @@ def arc_key(arc_data, create=True, reindex=False, batch=False):
             logging.warn('Arc has no publisher: %r', arc_data)
 
     if arc and isinstance(arc_data, dict):
-        if arc.has_updates(arc_data):
+        arc_updated, last_update = arc.has_updates(arc_data)
+        if arc_updated:
             # Arc is new or has been info has been updated since last put
             arc.apply_changes(arc_data)
             changed = True

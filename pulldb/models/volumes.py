@@ -178,7 +178,8 @@ def volume_key(volume_data, create=True, reindex=False, batch=False):
         )
 
     if volume and isinstance(volume_data, dict):
-        if volume.has_updates(volume_data):
+        volume_updated, last_update = volume.has_updates(volume_data)
+        if volume_updated:
             # Volume is new or has been info has been updated since last put
             volume.apply_changes(volume_data)
             changed = True
