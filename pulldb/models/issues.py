@@ -243,13 +243,15 @@ def issue_key(issue_data, volume_key=None, create=True, batch=False):
 
     if isinstance(issue_data, basestring):
         issue_id = issue_data
+    elif isinstance(issue_data, int):
+        issue_id = str(issue_data)
     else:
         issue_id = issue_data['id']
     key = ndb.Key(Issue, str(issue_id))
+    issue = key.get()
 
     if isinstance(issue_data, dict):
         updated = False
-        issue = key.get()
 
         if issue:
             updated, last_update = issue.has_updates(issue_data)
@@ -275,7 +277,8 @@ def issue_key(issue_data, volume_key=None, create=True, batch=False):
                 return issue.put_async()
             issue.put()
 
-    return key
+    if issue:
+        return key
 
 @ndb.tasklet
 def issue_context(issue):

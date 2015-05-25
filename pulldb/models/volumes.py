@@ -168,8 +168,11 @@ def volume_key(volume_data, create=True, reindex=False, batch=False):
                 cv = comicvine.load()
                 volume_data = cv.fetch_volume(volume_data['id'])
         logging.info('Creating volume: %r', volume_data)
-        publisher = volume_data['publisher']['id']
-        publisher_key = publishers.publisher_key(volume_data['publisher'])
+        if 'publisher' in volume_data:
+            publisher_key = publishers.publisher_key(volume_data['publisher'])
+        else:
+            logging.warn('volume %d has no publisher', volume_data['id'])
+            publisher_key = None
         volume = Volume(
             key=key,
             identifier=volume_data['id'],
