@@ -188,8 +188,7 @@ def arc_key(arc_data, create=True, reindex=False, batch=False):
             return arc.put_async()
         arc.put()
 
-    if arc:
-        return arc.key
+    return key
 
 @ndb.tasklet
 def arc_context(arc):
