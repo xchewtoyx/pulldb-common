@@ -55,6 +55,7 @@ class AsyncFuture(tasklets.Future):
         self.set_result(result)
 
     def get_result(self):
+        reply = {}
         response = super(AsyncFuture, self).get_result()
         if response:
             self.response = response
