@@ -145,8 +145,12 @@ class Comicvine(object):
     @ndb.tasklet
     def _fetch_async(self, url, **kwargs): # pylint: disable=no-self-use
         context = ndb.get_context()
-        response = yield context.urlfetch(url, **kwargs)
-        raise ndb.Return(response)
+        try:
+            response = yield context.urlfetch(url, **kwargs)
+        except DeadlineExceededError as err:
+            logging.warn("Error fetching url %r: %r", url, err)
+        else:
+            raise ndb.Return(response)
 
     @VarzContext('cvstats')
     def _fetch_with_retry(self, url, retries=3, **kwargs):
