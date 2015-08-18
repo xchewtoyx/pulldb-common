@@ -43,14 +43,15 @@ class AsyncFuture(tasklets.Future):
     def _result_available(self):
         result = self.future.get_result()
         self.varz.latency = time() - self.start
-        logging.debug('Async fetch complete[%s]: %r',
-                      result.status_code, result.content)
-        try:
-            reply = json.loads(result.content)
-            if reply['status_code'] >= 100:
-                raise ApiError(reply['status_code'], reply['error'])
-        except (TypeError, ValueError) as err:
-            logging.warn('No JSON found in response: %r', result)
+        if result:
+            logging.debug('Async fetch complete[%s]: %r',
+                          result.status_code, result.content)
+            try:
+                reply = json.loads(result.content)
+                if reply['status_code'] >= 100:
+                    raise ApiError(reply['status_code'], reply['error'])
+            except (TypeError, ValueError) as err:
+                logging.warn('No JSON found in response: %r', result)
         self.set_result(result)
 
     def get_result(self):
