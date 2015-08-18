@@ -30,6 +30,11 @@ class ApiError(Exception):
         )
 
 
+class BadResponse(object):
+    status_code = 500
+    content = '{}'
+
+
 class AsyncFuture(tasklets.Future):
     def __init__(self, future):
         super(AsyncFuture, self).__init__()
@@ -59,13 +64,16 @@ class AsyncFuture(tasklets.Future):
         response = super(AsyncFuture, self).get_result()
         if response:
             self.response = response
-            self.varz.http_status = response.status_code
-            self.varz.size = len(response.content)
-            try:
-                reply = json.loads(response.content)
-                self.varz.status = reply.get('status_code', 0)
-            except ValueError:
-                self.varz.status = 500
+        else:
+            self.response = BadResponse()
+
+        self.varz.http_status = response.status_code
+        self.varz.size = len(response.content)
+        try:
+            reply = json.loads(response.content)
+            self.varz.status = reply.get('status_code', 0)
+        except ValueError:
+            self.varz.status = 500
         self.varz_context.stop()
         return reply.get('results', [])
 
