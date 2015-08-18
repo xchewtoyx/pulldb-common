@@ -56,14 +56,15 @@ class AsyncFuture(tasklets.Future):
 
     def get_result(self):
         response = super(AsyncFuture, self).get_result()
-        self.response = response
-        self.varz.http_status = response.status_code
-        self.varz.size = len(response.content)
-        try:
-            reply = json.loads(response.content)
-            self.varz.status = reply.get('status_code', 0)
-        except ValueError:
-            self.varz.status = 500
+        if response:
+            self.response = response
+            self.varz.http_status = response.status_code
+            self.varz.size = len(response.content)
+            try:
+                reply = json.loads(response.content)
+                self.varz.status = reply.get('status_code', 0)
+            except ValueError:
+                self.varz.status = 500
         self.varz_context.stop()
         return reply.get('results', [])
 
