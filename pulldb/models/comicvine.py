@@ -158,7 +158,8 @@ class Comicvine(object):
         try:
             response = yield context.urlfetch(url, **kwargs)
         except DeadlineExceededError as err:
-            logging.warn("Error fetching url %r: %r", url, err)
+            logging.warn("Error fetching url %r: %r [deadline: %s]",
+                         url, err, urlfetch.get_default_fetch_deadline())
         else:
             raise ndb.Return(response)
 
