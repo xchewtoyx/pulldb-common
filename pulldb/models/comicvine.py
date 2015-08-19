@@ -302,8 +302,8 @@ class Comicvine(object):
             return 0, []
 
 def response_pages(response):
-    total_results = response['number_of_total_results']
-    limit = response['limit']
+    total_results = response.get('number_of_total_results', 0)
+    limit = response.get('limit', 0)
     if limit:
         pages = int(ceil(1.0*total_results/limit))
     else:
