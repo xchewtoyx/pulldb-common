@@ -62,10 +62,9 @@ class AsyncFuture(tasklets.Future):
     def get_result(self):
         reply = {}
         response = super(AsyncFuture, self).get_result()
-        if response:
-            self.response = response
-        else:
-            self.response = BadResponse()
+        if response is None:
+            response = BadResponse()
+        self.response = response
 
         self.varz.http_status = response.status_code
         self.varz.size = len(response.content)
