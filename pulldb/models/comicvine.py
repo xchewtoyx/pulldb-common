@@ -49,8 +49,8 @@ class AsyncFuture(tasklets.Future):
         result = self.future.get_result()
         self.varz.latency = time() - self.start
         if result:
-            logging.debug('Async fetch complete[%s]: %r',
-                          result.status_code, result.content)
+            logging.debug('Async fetch complete [%s %r]: %r',
+                          result.status_code, result.headers, result.content)
             try:
                 reply = json.loads(result.content)
                 if reply['status_code'] >= 100:
