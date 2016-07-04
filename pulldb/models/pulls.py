@@ -21,6 +21,7 @@ class Pull(ndb.Model):
 
     Holds pulled issue data.  Parent key should be a subscription.
     '''
+    collection = ndb.KeyProperty(repeated=True)
     identifier = ndb.IntegerProperty()
     ignored = ndb.BooleanProperty(default=False)
     issue = ndb.KeyProperty(kind='Issue')
@@ -65,6 +66,7 @@ def pull_key(data, user=None, create=True, batch=False):
         if not pull and create:
             pull = Pull(
                 key=key,
+                collection=issue.collection,
                 identifier=int(pull_id),
                 issue=issue_key,
                 name=issue.name,
